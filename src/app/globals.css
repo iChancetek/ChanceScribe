@@ -1,0 +1,48 @@
+@import "tailwindcss";
+@import "@fontsource/eb-garamond/400.css";
+@import "@fontsource/eb-garamond/700.css";
+@import "@fontsource-variable/inter";
+
+@theme {
+  --color-background: #FAF9F6;
+  --color-foreground: #1c1c1c;
+  --color-primary: #121212;
+  --color-primary-foreground: #FAF9F6;
+  --color-secondary: #f0eee9;
+  --color-secondary-foreground: #1c1c1c;
+  --color-accent: #3b82f6; /* Subtle accent */
+  --color-accent-foreground: #ffffff;
+  --color-border: #e2e2e2;
+
+  --font-serif: "EB Garamond", serif;
+  --font-sans: "Inter Variable", sans-serif;
+}
+
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--color-border, currentColor);
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    @apply antialiased min-h-screen font-sans;
+  }
+
+  h1, h2, h3, .serif {
+    font-family: var(--font-serif);
+    @apply tracking-tight;
+  }
+}
+
+@layer utilities {
+  .flow-glass {
+    @apply bg-white/70 backdrop-blur-xl border border-black/5 shadow-sm;
+  }
+  
+  .writing-pad {
+    @apply max-w-4xl mx-auto w-full bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl border border-black/5 p-12;
+  }
+}
