@@ -1,5 +1,8 @@
 {
   "apphosting": {
     "app": "chancescribe"
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }

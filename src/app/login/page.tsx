@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ArrowRight, Loader2, Mail, Eye, EyeOff, Sparkles, AlertCircle } from "lucide-react";
@@ -9,8 +9,14 @@ import Link from "next/link";
 type Mode = "signin" | "signup" | "reset";
 
 export default function LoginPage() {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, loading, error, clearError } = useAuth();
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, loading, error, clearError } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (user && !loading) {
+      router.push("/dashboard");
+    }
+  }, [user, loading, router]);
 
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");

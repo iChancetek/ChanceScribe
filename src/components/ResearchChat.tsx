@@ -135,9 +135,9 @@ export function ResearchChat({ sources, tone, language }: ResearchChatProps) {
             <div
               className={cn(
                 "max-w-[85%] rounded-2xl px-5 py-3 text-sm leading-relaxed",
-                msg.role === "user"
-                  ? "bg-primary text-white"
-                  : "bg-secondary/50 text-primary/90 border border-black/5"
+                  msg.role === "user"
+                    ? "bg-primary text-white"
+                    : "bg-white/10 text-white/90 border border-white/10"
               )}
             >
               <div className="whitespace-pre-wrap font-serif">{msg.content}</div>

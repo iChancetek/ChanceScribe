@@ -6,10 +6,12 @@ import { cn } from "@/lib/utils";
 import { ToneSelector } from "./ToneSelector";
 import { LanguageSelector } from "./LanguageSelector";
 import { transcribeAudio } from "@/actions/whisper";
-import { saveSession } from "@/lib/firebase/firestore";
+import { saveSession } from "@/lib/firebase/items";
 import { VoiceSelector } from "./VoiceSelector";
+import { useAuth } from "@/context/AuthContext";
 
 export function StreamingAudioRecorder() {
+  const { user } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState<string>("");
@@ -73,6 +75,7 @@ export function StreamingAudioRecorder() {
         
         // Save dynamically rewritten version
         await saveSession({
+            uid: user?.uid,
             type: language !== "English" ? "translation" : "sst",
             language: language,
             summary: polishedText.substring(0, 60) + (polishedText.length > 60 ? "..." : "")
@@ -105,7 +108,7 @@ export function StreamingAudioRecorder() {
           const formData = new FormData();
           formData.append("audio", new File([audioBlob], "recording.webm"));
           
-          setTranscript("Transcribing with Whisper...");
+          setTranscript("Transcribing with ChanceScribe...");
           
           // 1. Whisper STT transcription
           const rawText = await transcribeAudio(formData);
@@ -252,11 +255,11 @@ export function StreamingAudioRecorder() {
         {!transcript && !isRecording && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center space-y-4 pointer-events-none z-0">
             <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center">
-              <Mic className="w-8 h-8 text-foreground/20" />
+              <Mic className="w-8 h-8 text-white/40" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-xl font-medium text-foreground/40">Ready to flow...</h3>
-              <p className="text-sm text-foreground/30">Start speaking, type, or paste text to witness real AI polishing.</p>
+              <h3 className="text-xl font-medium text-white/50">Ready to flow...</h3>
+              <p className="text-sm text-white/30">Start speaking, type, or paste text to witness real AI polishing.</p>
             </div>
           </div>
         )}
@@ -266,7 +269,7 @@ export function StreamingAudioRecorder() {
                <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center animate-pulse">
                  <Mic className="w-8 h-8 text-red-500" />
                </div>
-               <h3 className="text-xl font-medium text-foreground/60 animate-pulse">Listening...</h3>
+               <h3 className="text-xl font-medium text-white/70 animate-pulse">Listening...</h3>
            </div>
         )}
 
@@ -290,7 +293,7 @@ export function StreamingAudioRecorder() {
               placeholder=""
               spellCheck={false}
               className={cn(
-                "w-full h-[400px] resize-none bg-transparent border-none focus:outline-none text-2xl md:text-3xl font-serif text-primary/90 leading-relaxed transition-all duration-500 p-0",
+                "w-full h-[400px] resize-none bg-transparent border-none focus:outline-none text-2xl md:text-3xl font-serif text-white/90 leading-relaxed transition-all duration-500 p-0",
                 isProcessing && "animate-pulse opacity-70"
               )}
             />

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Trash2, RotateCcw, Pencil, Check, X, ChevronDown, ChevronUp,
-  Mic, BookOpen, FileText, Headphones, Search, Clock, AlertTriangle, Loader2
+  Mic, BookOpen, StickyNote, Headphones, Search, Clock, AlertTriangle, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -30,7 +30,7 @@ function formatDate(ts: Timestamp | null | undefined): string {
 const TYPE_ICONS: Record<ItemType, any> = {
   flow: Mic,
   journal: BookOpen,
-  memo: FileText,
+  memo: StickyNote,
   research: Search,
   deepdive: Headphones,
 };
@@ -106,15 +106,15 @@ function ItemCard({
           )}
           <div className="flex items-center gap-2 mt-1">
             <span className={cn("text-[10px] font-bold uppercase tracking-widest", color)}>{TYPE_LABELS[item.type]}</span>
-            <span className="text-[10px] text-white/20">·</span>
-            <span className="text-[10px] text-white/25">{formatDate(item.updatedAt)}</span>
+            <span className="text-[10px] text-white/40">·</span>
+            <span className="text-[10px] text-white/45">{formatDate(item.updatedAt)}</span>
             {isTrash && days <= 3 && (
               <span className="flex items-center gap-1 text-[10px] text-red-400/80">
                 <AlertTriangle className="w-3 h-3" /> {days}d left
               </span>
             )}
             {isTrash && days > 3 && (
-              <span className="text-[10px] text-white/20 flex items-center gap-1">
+              <span className="text-[10px] text-white/40 flex items-center gap-1">
                 <Clock className="w-3 h-3" /> {days}d left
               </span>
             )}
@@ -172,7 +172,7 @@ function ItemCard({
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white/80 leading-relaxed focus:outline-none focus:border-blue-400/50 resize-none"
             />
           ) : (
-            <p className="text-sm text-white/55 leading-relaxed whitespace-pre-wrap line-clamp-8">{item.content}</p>
+            <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap line-clamp-8">{item.content}</p>
           )}
         </div>
       )}
@@ -242,7 +242,7 @@ export function Library() {
     { id: "all", label: "All", icon: BookOpen, color: "text-white/60" },
     { id: "flow", label: "Flow", icon: Mic, color: "text-blue-400" },
     { id: "journal", label: "Journal", icon: BookOpen, color: "text-amber-400" },
-    { id: "memo", label: "Memos", icon: FileText, color: "text-sky-400" },
+    { id: "memo", label: "Memos", icon: StickyNote, color: "text-sky-400" },
     { id: "research", label: "Research", icon: Search, color: "text-violet-400" },
     { id: "deepdive", label: "Deep Dive", icon: Headphones, color: "text-emerald-400" },
     { id: "trash", label: `Trash${trashItems.length > 0 ? ` (${trashItems.length})` : ""}`, icon: Trash2, color: "text-red-400" },
@@ -254,7 +254,7 @@ export function Library() {
       {/* Header */}
       <div className="text-center space-y-1">
         <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white">Library</h2>
-        <p className="text-white/35 font-light">Review, edit, and manage all your saved content.</p>
+        <p className="text-white/50 font-light">Review, edit, and manage all your saved content.</p>
       </div>
 
       {/* Filter Nav */}

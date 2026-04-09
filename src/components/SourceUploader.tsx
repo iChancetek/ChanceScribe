@@ -23,6 +23,7 @@ export function SourceUploader({ sources, onSourcesChange, maxSources = 10 }: So
   const [urlInput, setUrlInput] = useState("");
   const [isExtractingUrl, setIsExtractingUrl] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = async (files: FileList) => {
@@ -61,6 +62,7 @@ export function SourceUploader({ sources, onSourcesChange, maxSources = 10 }: So
   const handleUrlSubmit = async () => {
     if (!urlInput.trim() || sources.length >= maxSources) return;
     setIsExtractingUrl(true);
+    setError("");
     try {
       const res = await fetch("/api/sources/extract-url", {
         method: "POST",
@@ -79,9 +81,12 @@ export function SourceUploader({ sources, onSourcesChange, maxSources = 10 }: So
           },
         ]);
         setUrlInput("");
+      } else if (data.error) {
+        setError(data.error);
       }
     } catch (err) {
       console.error("URL extraction error:", err);
+      setError("Failed to extract content from this URL. Please ensure it is publicly accessible.");
     }
     setIsExtractingUrl(false);
   };
@@ -139,17 +144,25 @@ export function SourceUploader({ sources, onSourcesChange, maxSources = 10 }: So
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="flex items-center gap-2 text-red-500 text-[11px] font-medium bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-xl animate-in fade-in slide-in-from-top-1">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          {error}
+        </div>
+      )}
+
       {/* URL input */}
       <div className="flex gap-2">
-        <div className="flex-1 flex items-center gap-2 px-4 py-3 bg-white border border-black/5 rounded-xl">
-          <Link className="w-4 h-4 text-foreground/30 shrink-0" />
+        <div className="flex-1 flex items-center gap-2 px-4 py-3 bg-white/[0.04] border border-white/8 rounded-xl backdrop-blur-sm">
+          <Link className="w-4 h-4 text-white/40 shrink-0" />
           <input
             type="url"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleUrlSubmit()}
             placeholder="Paste a website or YouTube URL..."
-            className="flex-1 bg-transparent text-sm font-medium focus:outline-none placeholder:text-foreground/30"
+            className="flex-1 bg-transparent text-sm font-medium text-white placeholder:text-white/30 focus:outline-none"
           />
         </div>
         <button

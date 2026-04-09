@@ -57,16 +57,22 @@ export async function saveItem(
     metadata?: Record<string, any>;
   }
 ): Promise<string> {
-  const docRef = await addDoc(userItems(uid), {
-    uid,
-    type,
-    ...data,
-    isDeleted: false,
-    deletedAt: null,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  return docRef.id;
+    try {
+      const docRef = await addDoc(userItems(uid), {
+        uid,
+        type,
+        ...data,
+        isDeleted: false,
+        deletedAt: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      console.log(`[Firestore] Saved ${type} with ID: ${docRef.id}`);
+      return docRef.id;
+    } catch (error) {
+      console.error(`[Firestore Error] saveItem failed for uid ${uid}:`, error);
+      throw error;
+    }
 }
 
 // ─── Update ─────────────────────────────────────────────────────────────────
@@ -112,13 +118,16 @@ export async function hardDeleteItem(uid: string, id: string): Promise<void> {
 
 export async function purgeExpiredItems(uid: string): Promise<void> {
   const cutoff = Timestamp.fromDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-  const q = query(
-    userItems(uid),
-    where("isDeleted", "==", true),
-    where("deletedAt", "<=", cutoff)
-  );
+  // Filter client side to avoid index requirement
+  const q = query(userItems(uid));
   const snap = await getDocs(q);
-  await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+  
+  const toDelete = snap.docs.filter((d) => {
+    const data = d.data();
+    return data.isDeleted === true && data.deletedAt && data.deletedAt.toMillis() <= cutoff.toMillis();
+  });
+  
+  await Promise.all(toDelete.map((d) => deleteDoc(d.ref)));
 }
 
 // ─── Subscribe: Active Items ─────────────────────────────────────────────────
@@ -129,16 +138,16 @@ export function subscribeToItems(
   callback: (items: SavedItem[]) => void,
   maxItems = 50
 ) {
-  const constraints: any[] = [
-    where("isDeleted", "==", false),
-    orderBy("updatedAt", "desc"),
-    limit(maxItems),
-  ];
-  if (type !== "all") constraints.unshift(where("type", "==", type));
-
-  const q = query(userItems(uid), ...constraints);
+  // Use a single-field index on updatedAt descending to avoid composite index requirements
+  const q = query(userItems(uid), orderBy("updatedAt", "desc"), limit(maxItems * 3));
+  
   return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as SavedItem)));
+    let items = snap.docs.map((d) => ({ id: d.id, ...d.data() } as SavedItem));
+    
+    // Filter client-side
+    items = items.filter(item => !item.isDeleted && (type === "all" || item.type === type));
+    
+    callback(items.slice(0, maxItems));
   });
 }
 
@@ -148,14 +157,23 @@ export function subscribeToTrash(
   uid: string,
   callback: (items: SavedItem[]) => void
 ) {
-  const q = query(
-    userItems(uid),
-    where("isDeleted", "==", true),
-    orderBy("deletedAt", "desc"),
-    limit(100)
-  );
+  // Use a single-field index on updatedAt to avoid composite index requirements
+  const q = query(userItems(uid), orderBy("updatedAt", "desc"), limit(200));
+  
   return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as SavedItem)));
+    let items = snap.docs.map((d) => ({ id: d.id, ...d.data() } as SavedItem));
+    
+    // Filter client-side
+    items = items.filter(item => item.isDeleted);
+    
+    // Sort by deletedAt desc client-side
+    items.sort((a, b) => {
+      const aTime = a.deletedAt?.toMillis() || 0;
+      const bTime = b.deletedAt?.toMillis() || 0;
+      return bTime - aTime;
+    });
+
+    callback(items.slice(0, 50));
   });
 }
 

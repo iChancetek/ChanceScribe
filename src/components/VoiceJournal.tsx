@@ -2,8 +2,8 @@
 
 import { useState, useRef, useCallback } from "react";
 import {
-  Mic, Square, Loader2, Save, Sparkles, Check, BookOpen, FileText,
-  ChevronDown, Wand2, Type, X
+  Mic, Square, Loader2, Save, Sparkles, Check, BookOpen,
+  ChevronDown, Wand2, Type, X, StickyNote
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -23,12 +23,12 @@ const ENHANCE_OPTIONS: { mode: EnhanceMode; label: string; desc: string }[] = [
 ];
 
 interface VoiceJournalProps {
-  defaultType?: EntryType;
+  entryType: EntryType;
 }
 
-export function VoiceJournal({ defaultType = "journal" }: VoiceJournalProps) {
+export function VoiceJournal({ entryType }: VoiceJournalProps) {
   const { user } = useAuth();
-  const [entryType, setEntryType] = useState<EntryType>(defaultType);
+  // removed internal entryType state
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [rawContent, setRawContent] = useState("");
@@ -157,24 +157,7 @@ export function VoiceJournal({ defaultType = "journal" }: VoiceJournalProps) {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
 
-      {/* Type Toggle */}
-      <div className="flex items-center justify-center gap-2 p-1.5 bg-white/[0.04] rounded-full border border-white/8 w-fit mx-auto">
-        {(["journal", "memo"] as EntryType[]).map(t => (
-          <button
-            key={t}
-            onClick={() => setEntryType(t)}
-            className={cn(
-              "flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-200",
-              entryType === t
-                ? "bg-white/10 text-white border border-white/15 shadow-lg"
-                : "text-white/30 hover:text-white/60 hover:bg-white/5"
-            )}
-          >
-            {t === "journal" ? <BookOpen className="w-4 h-4 text-amber-400" /> : <FileText className="w-4 h-4 text-sky-400" />}
-            {t === "journal" ? "Journal" : "Memo"}
-          </button>
-        ))}
-      </div>
+      {/* Type Toggle Removed - Handled by Tabs */}
 
       {/* Card */}
       <div className="bg-white/[0.03] border border-white/8 rounded-3xl p-6 space-y-5 backdrop-blur-sm">
@@ -185,7 +168,7 @@ export function VoiceJournal({ defaultType = "journal" }: VoiceJournalProps) {
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder={entryType === "journal" ? "Give this entry a title…" : "Memo title…"}
-          className="w-full bg-transparent text-white text-lg font-semibold placeholder:text-white/20 focus:outline-none border-b border-white/8 pb-3"
+          className="w-full bg-transparent text-white text-lg font-semibold placeholder:text-white/40 focus:outline-none border-b border-white/8 pb-3"
         />
 
         {/* Content Area */}
@@ -198,7 +181,7 @@ export function VoiceJournal({ defaultType = "journal" }: VoiceJournalProps) {
               : "Record a quick voice memo, or type your note…"
           }
           rows={10}
-          className="w-full bg-transparent text-white/80 text-sm leading-relaxed placeholder:text-white/20 focus:outline-none resize-none"
+          className="w-full bg-transparent text-white text-base leading-relaxed placeholder:text-white/40 focus:outline-none resize-none"
         />
 
         {/* Error */}
@@ -225,7 +208,7 @@ export function VoiceJournal({ defaultType = "journal" }: VoiceJournalProps) {
                 )}
               >
                 {isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
-                {isTranscribing ? "Transcribing…" : "Record"}
+                {isTranscribing ? "Transcribing with ChanceScribe…" : "Record"}
               </button>
             ) : (
               <button
@@ -312,7 +295,7 @@ export function VoiceJournal({ defaultType = "journal" }: VoiceJournalProps) {
       </div>
 
       {/* Entry type hint */}
-      <p className="text-center text-xs text-white/20">
+      <p className="text-center text-xs text-white/40">
         {entryType === "journal"
           ? "Journal entries are private, date-stamped, and saved to your Library."
           : "Voice memos are quick notes — record, enhance, and save in seconds."}

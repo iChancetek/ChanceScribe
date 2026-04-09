@@ -31,6 +31,12 @@ export const metadata: Metadata = {
     locale: "en_US",
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "ChanceScribe — Power your thinking with ChanceScribe AI",
+    description: "Frictionless Intelligence. Privacy-Native. Dictate, research, and understand deeper with GPT-5.4.",
+    images: ["/og-image.png"],
+  },
   icons: {
     icon: "/og-image.png",
     apple: "/og-image.png",

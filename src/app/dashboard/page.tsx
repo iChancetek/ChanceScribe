@@ -15,11 +15,12 @@ import { Library as LibraryView } from "@/components/Library";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { FileText, StickyNote } from "lucide-react";
 
 const TABS = [
   { id: "flow",     label: "Flow",     icon: Mic,       color: "text-blue-400",    glow: "shadow-blue-500/20" },
   { id: "journal",  label: "Journal",  icon: BookOpen,  color: "text-amber-400",   glow: "shadow-amber-500/20" },
+  { id: "memo",     label: "Memo",     icon: StickyNote,color: "text-sky-400",     glow: "shadow-sky-500/20" },
   { id: "research", label: "Research", icon: FileText,  color: "text-violet-400",  glow: "shadow-violet-500/20" },
   { id: "deepdive", label: "Deep Dive",icon: Headphones,color: "text-emerald-400", glow: "shadow-emerald-500/20" },
   { id: "library",  label: "Library",  icon: Library,   color: "text-rose-400",    glow: "shadow-rose-500/20" },
@@ -133,7 +134,18 @@ export default function Dashboard() {
               <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white">Voice Journal</h2>
               <p className="text-white/35 font-light">Record your thoughts, enhance with AI, and save privately.</p>
             </div>
-            <VoiceJournal />
+            <VoiceJournal entryType="journal" />
+          </section>
+        )}
+
+        {/* === MEMO TAB === */}
+        {activeTab === "memo" && (
+          <section className="space-y-10">
+            <div className="text-center space-y-2">
+              <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white">Voice Memo</h2>
+              <p className="text-white/35 font-light">Record a quick thought or note and save it in seconds.</p>
+            </div>
+            <VoiceJournal entryType="memo" />
           </section>
         )}
 

@@ -5,14 +5,21 @@ export async function POST(req: NextRequest) {
     const { url } = await req.json();
     if (!url) return NextResponse.json({ error: "URL required" }, { status: 400 });
 
-    // YouTube detection
-    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    // Improved YouTube detection (handles shorts, live, mobile, and secondary params)
+    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/live\/)([a-zA-Z0-9_-]{11})/);
     
     if (ytMatch) {
-      const { YoutubeTranscript } = await import("youtube-transcript");
-      const transcript = await YoutubeTranscript.fetchTranscript(ytMatch[1]);
-      const text = transcript.map((t: any) => t.text).join(" ");
-      return NextResponse.json({ text, type: "youtube", title: `YouTube: ${ytMatch[1]}` });
+      try {
+        const { YoutubeTranscript } = await import("youtube-transcript");
+        const transcript = await YoutubeTranscript.fetchTranscript(ytMatch[1]);
+        const text = transcript.map((t: any) => t.text).join(" ");
+        return NextResponse.json({ text, type: "youtube", title: `YouTube: ${ytMatch[1]}` });
+      } catch (err: any) {
+        console.warn("YouTube transcript fetch failed:", err);
+        return NextResponse.json({ 
+          error: "This YouTube video has no accessible transcript. Please try a different video or an article." 
+        }, { status: 400 });
+      }
     }
 
     // Regular URL → fetch HTML → strip tags
