@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, Link, Loader2, FileText, Globe, Video, Music, X } from "lucide-react";
+import { Upload, Link, Loader2, FileText, Globe, Video, Music, X, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { extractDocumentText } from "@/actions/document";
 
