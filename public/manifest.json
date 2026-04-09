@@ -1,0 +1,17 @@
+{
+  "name": "ChanceScribe",
+  "short_name": "ChanceScribe",
+  "description": "Power your thinking with ChanceScribe AI",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#050508",
+  "theme_color": "#050508",
+  "icons": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
