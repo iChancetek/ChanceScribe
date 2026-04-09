@@ -39,14 +39,28 @@ export default function Home() {
   return (
     <div className="relative min-h-screen bg-[#050508] text-white overflow-x-hidden">
 
-      {/* ── Aurora background ── */}
+      {/* ── Background Video & Auroras ── */}
       <div className="pointer-events-none fixed inset-0 z-0">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster="/og-image.png"
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.8]"
+        >
+          <source src="/videos/ChanceScribe.mp4" type="video/mp4" />
+        </video>
+        
+        {/* Dark overlay for text contrast */}
+        <div className="absolute inset-0 bg-[#050508]/10" />
+
         {/* Blue aurora — top-left */}
-        <div className="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] rounded-full bg-blue-600/25 blur-[120px]" />
+        <div className="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] rounded-full bg-blue-600/20 blur-[120px]" />
         {/* Violet aurora — top-right */}
-        <div className="absolute top-[-10%] right-[-15%] w-[600px] h-[600px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute top-[-10%] right-[-15%] w-[600px] h-[600px] rounded-full bg-violet-600/15 blur-[130px]" />
         {/* Teal aurora — bottom-center */}
-        <div className="absolute bottom-[-10%] left-[30%] w-[500px] h-[500px] rounded-full bg-teal-500/15 blur-[100px]" />
+        <div className="absolute bottom-[-10%] left-[30%] w-[500px] h-[500px] rounded-full bg-teal-500/10 blur-[100px]" />
       </div>
 
       {/* ── Nav ── */}
@@ -55,13 +69,9 @@ export default function Home() {
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 via-violet-400 to-emerald-400 flex items-center justify-center shadow-lg shadow-blue-500/30">
             <Mic className="w-4 h-4 text-white" />
           </div>
-          <span className="text-lg font-semibold tracking-tight text-white">ChanceScribe</span>
+          <span className="text-lg font-semibold tracking-tight text-white">ChanceScribe AI</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-blue-400/80 bg-blue-400/10 border border-blue-400/20 px-3 py-1.5 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-            GPT-5.4 Powered
-          </span>
           <Link
             href="/login"
             className="px-5 py-2 bg-white/10 hover:bg-white/15 text-white text-sm font-medium rounded-full border border-white/10 transition-all duration-200 backdrop-blur-sm"
@@ -74,12 +84,11 @@ export default function Home() {
       {/* ── Hero ── */}
       <section className="relative z-10 flex flex-col items-center text-center max-w-5xl mx-auto px-8 pt-20 pb-32">
 
-        {/* Gemini-style icon */}
+        {/* Transparent star logo */}
         <div className="relative mb-10">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-400 via-violet-500 via-pink-400 to-emerald-400 flex items-center justify-center shadow-2xl shadow-blue-500/30 mx-auto">
+          <div className="w-24 h-24 rounded-3xl border border-white/20 bg-transparent flex items-center justify-center mx-auto">
             <Sparkles className="w-10 h-10 text-white" />
           </div>
-          <div className="absolute inset-0 w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-400 via-violet-500 to-emerald-400 blur-2xl opacity-40 mx-auto" />
         </div>
 
         <p className="text-sm font-semibold tracking-[0.2em] uppercase text-blue-400 mb-5">
@@ -187,7 +196,7 @@ export default function Home() {
       <footer className="relative z-10 border-t border-white/6 max-w-6xl mx-auto px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 via-violet-400 to-emerald-400" />
-          <span className="text-sm text-white/30 font-medium">ChanceScribe © 2026</span>
+          <span className="text-sm text-white/30 font-medium">ChanceScribe AI © 2026</span>
         </div>
         <div className="flex items-center gap-6">
           {['Privacy', 'Terms', 'Support'].map((item) => (

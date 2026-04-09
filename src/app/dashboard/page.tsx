@@ -14,8 +14,8 @@ import { VoiceJournal } from "@/components/VoiceJournal";
 import { Library as LibraryView } from "@/components/Library";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { FileText, StickyNote } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const TABS = [
   { id: "flow",     label: "Flow",     icon: Mic,       color: "text-blue-400",    glow: "shadow-blue-500/20" },
@@ -62,10 +62,8 @@ export default function Dashboard() {
         {/* Header */}
         <header className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 via-violet-400 to-emerald-400 flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <Sparkles className="w-3.5 h-3.5 text-white" />
-            </div>
-            <span className="text-base font-semibold tracking-tight text-white">ChanceScribe</span>
+            <BrandLogo size={28} />
+            <span className="text-base font-semibold tracking-tight text-white">ChanceScribe AI</span>
           </Link>
           <div className="flex items-center gap-3">
             <span className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-blue-400/80 bg-blue-400/10 border border-blue-400/20 px-3 py-1.5 rounded-full">

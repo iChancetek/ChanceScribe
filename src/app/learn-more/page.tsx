@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Mic, BookOpen, Headphones, Globe, Shield, Sparkles, Zap, FileText, Video, Music, Brain, MessageCircle, Volume2 } from "lucide-react";
 import { IChancellor } from "@/components/IChancellor";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const heroFeatures = [
   { icon: Mic, label: "Flow Dictation", color: "text-blue-400", bg: "from-blue-500/20 to-blue-600/5" },
@@ -84,10 +85,8 @@ export default function LearnMorePage() {
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between max-w-6xl mx-auto px-8 py-6 border-b border-white/5">
         <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 via-violet-400 to-emerald-400 flex items-center justify-center">
-            <Sparkles className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="text-base font-semibold tracking-tight">ChanceScribe</span>
+          <BrandLogo size={28} />
+          <span className="text-base font-semibold tracking-tight">ChanceScribe AI</span>
         </Link>
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors">

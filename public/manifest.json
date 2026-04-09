@@ -1,6 +1,6 @@
 {
-  "name": "ChanceScribe",
-  "short_name": "ChanceScribe",
+  "name": "ChanceScribe AI",
+  "short_name": "ChanceScribe AI",
   "description": "Power your thinking with ChanceScribe AI",
   "start_url": "/dashboard",
   "display": "standalone",
@@ -8,10 +8,22 @@
   "theme_color": "#050508",
   "icons": [
     {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "/og-image.png",
       "sizes": "1024x1024",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

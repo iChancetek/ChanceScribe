@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ArrowRight, Loader2, Mail, Eye, EyeOff, Sparkles, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { BrandLogo } from "@/components/BrandLogo";
 
 type Mode = "signin" | "signup" | "reset";
 
@@ -94,10 +95,8 @@ export default function LoginPage() {
         {/* Brand mark */}
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="group flex items-center gap-2.5 mb-6 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-400 via-violet-500 to-emerald-400 flex items-center justify-center shadow-2xl shadow-blue-500/30">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-semibold tracking-tight">ChanceScribe</span>
+            <BrandLogo size={40} className="shadow-2xl shadow-blue-500/20" />
+            <span className="text-xl font-semibold tracking-tight">ChanceScribe AI</span>
           </Link>
           <h1 className="text-3xl font-bold tracking-tight text-white text-center">{titles[mode]}</h1>
           <p className="text-white/40 text-sm mt-2 text-center">{subtitles[mode]}</p>
@@ -236,7 +235,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-white/15 mt-6">
-          By continuing, you agree to ChanceScribe&apos;s{" "}
+          By continuing, you agree to ChanceScribe AI&apos;s{" "}
           <a href="#" className="underline hover:text-white/40 transition-colors">Terms</a>
           {" "}and{" "}
           <a href="#" className="underline hover:text-white/40 transition-colors">Privacy Policy</a>.

@@ -29,6 +29,7 @@ export function IChancellor() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Auto-seed knowledge base on first open (version-gated so re-seeds on content updates)
   useEffect(() => {
@@ -100,18 +101,41 @@ export function IChancellor() {
     }
   }, [isStreaming, messages]);
 
-  const speakText = (text: string) => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
-    utterance.pitch = 1.05;
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v => v.name.includes("Samantha") || v.name.includes("Google") || v.lang === "en-US");
-    if (preferred) utterance.voice = preferred;
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    window.speechSynthesis.speak(utterance);
+  const speakText = async (text: string) => {
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+
+    try {
+      const res = await fetch("/api/ichancellor/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!res.ok) throw new Error("TTS failed");
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      currentAudioRef.current = audio;
+
+      audio.onplay = () => setIsSpeaking(true);
+      audio.onended = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(url);
+      };
+
+      await audio.play();
+    } catch (err) {
+      console.error("iChancellor Speech Error:", err);
+      setIsSpeaking(false);
+    }
   };
 
   const toggleVoiceInput = () => {
@@ -139,7 +163,10 @@ export function IChancellor() {
 
   const clearChat = () => {
     setMessages([{ role: "assistant", content: GREETINGS[0], id: "init-reset" }]);
-    window.speechSynthesis?.cancel();
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
     setIsSpeaking(false);
   };
 
@@ -180,35 +207,41 @@ export function IChancellor() {
 
       {/* Chat panel */}
       <div className={cn(
-        "fixed bottom-24 right-6 z-50 w-[360px] max-h-[560px] flex flex-col rounded-3xl overflow-hidden shadow-2xl shadow-black/50 transition-all duration-300 origin-bottom-right",
-        "border border-white/10 bg-[#0c0c14]/95 backdrop-blur-2xl",
+        "fixed bottom-24 right-6 z-50 w-[360px] max-h-[560px] flex flex-col rounded-3xl overflow-hidden shadow-2xl shadow-black/80 transition-all duration-300 origin-bottom-right",
+        "border border-white/30 bg-white/20",
         isOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-90 opacity-0 pointer-events-none"
       )}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/6 bg-gradient-to-r from-blue-600/10 to-violet-600/10">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/15 bg-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-400 via-violet-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-400 via-violet-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-blue-500/30 shrink-0">
               <Sparkles className="w-4.5 h-4.5 text-white w-4 h-4" />
             </div>
             <div>
               <p className="text-sm font-bold text-white leading-none">iChancellor</p>
-              <p className="text-[10px] text-blue-400/80 mt-0.5">
+              <p className="text-[10px] text-blue-400 mt-0.5">
                 {isSpeaking ? "Speaking..." : isStreaming ? "Thinking..." : "RAG-Powered · GPT-5.4"}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {isSpeaking && (
-              <button onClick={() => { window.speechSynthesis?.cancel(); setIsSpeaking(false); }}
+              <button onClick={() => { 
+                if (currentAudioRef.current) {
+                  currentAudioRef.current.pause();
+                  currentAudioRef.current = null;
+                }
+                setIsSpeaking(false); 
+              }}
                 className="p-1.5 rounded-lg hover:bg-white/10 text-blue-400 transition-colors">
                 <Volume2 className="w-3.5 h-3.5" />
               </button>
             )}
-            <button onClick={clearChat} className="p-1.5 rounded-lg hover:bg-white/10 text-white/30 hover:text-white/70 transition-colors">
+            <button onClick={clearChat} className="p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors">
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-white/30 hover:text-white/70 transition-colors">
+            <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors">
               <ChevronDown className="w-4 h-4" />
             </button>
           </div>
@@ -226,8 +259,8 @@ export function IChancellor() {
               <div className={cn(
                 "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed",
                 msg.role === "user"
-                  ? "bg-[#1a73e8] text-white rounded-br-sm"
-                  : "bg-white/[0.06] text-white/85 border border-white/6 rounded-bl-sm"
+                  ? "bg-[#1a73e8] text-white rounded-br-sm shadow-xl shadow-blue-500/25"
+                  : "bg-white/25 text-white border border-white/15 rounded-bl-sm"
               )}>
                 {msg.content || (
                   <span className="flex gap-1">
@@ -249,7 +282,7 @@ export function IChancellor() {
               <button
                 key={s}
                 onClick={() => sendMessage(s)}
-                className="text-[11px] px-3 py-1.5 rounded-full bg-white/5 border border-white/8 text-white/50 hover:bg-white/10 hover:text-white/80 transition-all"
+                className="text-[11px] px-3 py-1.5 rounded-full bg-white/5 border border-white/8 text-white/90 hover:bg-white/10 hover:text-white transition-all"
               >
                 {s}
               </button>
@@ -258,8 +291,8 @@ export function IChancellor() {
         )}
 
         {/* Input bar */}
-        <div className="px-3 pb-3 pt-2 border-t border-white/6">
-          <div className="flex items-center gap-2 bg-white/[0.05] border border-white/8 rounded-2xl px-3 py-2">
+        <div className="px-3 pb-3 pt-2 border-t border-white/10">
+          <div className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-2xl px-3 py-2">
             <input
               ref={inputRef}
               type="text"
@@ -267,7 +300,7 @@ export function IChancellor() {
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage(input)}
               placeholder="Ask iChancellor anything..."
-              className="flex-1 bg-transparent text-sm text-white placeholder:text-white/20 focus:outline-none"
+              className="flex-1 bg-transparent text-sm text-white placeholder:text-white/50 focus:outline-none"
             />
             <button
               onClick={toggleVoiceInput}
@@ -283,7 +316,7 @@ export function IChancellor() {
               {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
           </div>
-          <p className="text-[10px] text-white/15 text-center mt-1.5">Powered by Pinecone RAG · GPT-5.4</p>
+          <p className="text-[10px] text-white/40 text-center mt-1.5">Powered by Pinecone RAG · GPT-5.4</p>
         </div>
       </div>
     </>
