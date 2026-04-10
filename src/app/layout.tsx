@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { BackButton } from "@/components/BackButton";
+import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -56,8 +57,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-[#050508]">
         <AuthProvider>
-          <BackButton />
-          {children}
+          <GlobalErrorBoundary>
+            <BackButton />
+            {children}
+          </GlobalErrorBoundary>
         </AuthProvider>
       </body>
     </html>

@@ -1,0 +1,253 @@
+"use client";
+
+import { Plus, Loader2, Headphones, Calendar, Sparkles } from "lucide-react";
+import { ResearchProject, createProject } from "@/lib/firebase/projects";
+import { useState } from "react";
+import { Timestamp } from "firebase/firestore";
+import { cn } from "@/lib/utils";
+import { WorkspaceIcon } from "./WorkspaceIcon";
+import { motion } from "framer-motion";
+
+interface WorkspacesGridProps {
+  uid: string;
+  projects: ResearchProject[];
+  isLoaded?: boolean;
+  onSelectProject: (project: ResearchProject) => void;
+  onProjectCreated: (projectId: string) => void;
+}
+
+function formatShortDate(ts: Timestamp | null | undefined): string {
+  if (!ts) return "";
+  try {
+    return ts.toDate().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return "";
+  }
+}
+
+function formatCreatedAt(ts: Timestamp | null | undefined): string {
+  if (!ts) return "";
+  try {
+    const d = ts.toDate();
+    return (
+      d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) +
+      " · " +
+      d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
+    );
+  } catch {
+    return "";
+  }
+}
+
+// ─── Animation Variants ────────────────────────────────────────────────────────
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 24,
+    }
+  },
+};
+
+// ─── Skeleton Card ────────────────────────────────────────────────────────────
+
+function SkeletonCard() {
+  return (
+    <motion.div 
+      variants={itemVariants}
+      className="flex flex-col h-48 rounded-3xl bg-white/[0.02] border border-white/8 p-5 animate-pulse"
+    >
+      <div className="w-9 h-9 rounded-xl bg-white/5 mb-auto" />
+      <div className="w-full space-y-2">
+        <div className="h-3.5 bg-white/8 rounded-full w-3/4" />
+        <div className="h-2.5 bg-white/5 rounded-full w-1/2" />
+        <div className="h-2 bg-white/5 rounded-full w-2/3" />
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export function WorkspacesGrid({
+  uid, projects, isLoaded = false, onSelectProject, onProjectCreated,
+}: WorkspacesGridProps) {
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleCreate = async () => {
+    setIsCreating(true);
+    try {
+      const id = await createProject(uid, "Untitled WorkSpace");
+      onProjectCreated(id);
+    } catch (error) {
+      console.error("Failed to create workspace:", error);
+      alert("Failed to create workspace. Please check your permissions or try again.");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <h2 className="text-2xl font-bold text-white tracking-tight">My WorkSpaces</h2>
+          {isLoaded && (
+            <p className="text-xs text-white/35 mt-0.5">
+              {projects.length === 0
+                ? "Create your first WorkSpace to get started"
+                : `${projects.length} workspace${projects.length !== 1 ? "s" : ""}`}
+            </p>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Loading skeleton */}
+      {!isLoaded && (
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+        >
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </motion.div>
+      )}
+
+      {/* Loaded grid */}
+      {isLoaded && (
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+        >
+
+          {/* Create New Card */}
+          <motion.div 
+            variants={itemVariants}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <button
+              onClick={handleCreate}
+              disabled={isCreating}
+              aria-label="Create new WorkSpace"
+              className="w-full group relative flex flex-col justify-center items-center h-48 rounded-3xl bg-violet-500/[0.05] border border-violet-500/20 hover:border-violet-500/50 hover:bg-violet-500/[0.1] hover:shadow-[0_0_20px_rgba(139,92,246,0.1)] transition-all duration-300 overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60"
+            >
+              {isCreating ? (
+                <Loader2 className="w-8 h-8 text-violet-400 animate-spin mb-3" />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-violet-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                  <Plus className="w-6 h-6 text-violet-300" />
+                </div>
+              )}
+              <span className="text-sm font-semibold text-violet-300">
+                {isCreating ? "Creating..." : "Create new WorkSpace"}
+              </span>
+            </button>
+          </motion.div>
+
+          {/* Empty state guidance — only when no projects yet */}
+          {projects.length === 0 && (
+            <motion.div 
+              variants={itemVariants}
+              className="hidden sm:flex col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-3 flex-col items-center justify-center h-48 rounded-3xl border border-dashed border-white/8 text-center p-6 gap-3"
+            >
+              <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white/25" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white/40">No WorkSpaces yet</p>
+                <p className="text-xs text-white/20 mt-1">
+                  Click "Create new WorkSpace" to upload research, PDFs, audio, and YouTube links.
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Project Cards */}
+          {projects.map((project) => {
+            const sourceCount = project.sources?.length ?? 0;
+            const hasAudio = !!project.deepDiveTranscript;
+
+            return (
+              <motion.div key={project.id} variants={itemVariants}>
+                <button
+                  onClick={() => onSelectProject(project)}
+                  aria-label={`Open workspace: ${project.name}`}
+                  className="w-full group flex flex-col text-left h-48 rounded-3xl bg-white/[0.03] border border-white/10 hover:border-white/20 hover:bg-white/[0.06] transition-all duration-300 p-5 relative overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60"
+                >
+                  {/* Icon row */}
+                  <div className="flex items-start justify-between w-full mb-auto">
+                    <div className="p-2 rounded-xl bg-white/5 text-white/50 group-hover:text-violet-400 transition-colors">
+                      <WorkspaceIcon workspaceId={project.id} className="w-5 h-5" />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {hasAudio && (
+                        <div
+                          className="p-1.5 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center"
+                          title="Deep Dive audio generated"
+                        >
+                          <Headphones className="w-3.5 h-3.5" />
+                        </div>
+                      )}
+                      {sourceCount > 0 && (
+                        <span className="text-[10px] font-bold text-white/40 bg-white/5 px-2 py-1 rounded-full">
+                          {sourceCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Metadata */}
+                  <div className="w-full">
+                    <h3 className="text-base font-bold text-white/90 line-clamp-2 mb-2 group-hover:text-white transition-colors">
+                      {project.name}
+                    </h3>
+                    {project.createdAt && (
+                      <div className="flex items-center gap-1 text-[10px] text-white/25 mb-1.5 font-medium">
+                        <Calendar className="w-3 h-3 shrink-0" />
+                        <span>Created {formatCreatedAt(project.createdAt)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 text-[11px] text-white/40 font-medium tracking-wide">
+                      <span>Modified {formatShortDate(project.updatedAt)}</span>
+                      <span>·</span>
+                      <span>{sourceCount} resource{sourceCount !== 1 ? "s" : ""}</span>
+                    </div>
+                  </div>
+
+                  {/* Hover gradient */}
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-violet-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                </button>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      )}
+    </div>
+  );
+}

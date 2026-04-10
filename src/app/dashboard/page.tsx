@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Mic, BookOpen, Headphones, LogOut, Library,
   Music, Globe, ArrowRight, Download, FolderOpen,
-  Pencil, Trash2, Check, X, Loader2
+  Pencil, Trash2, Check, X, Loader2, LayoutGrid
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StreamingAudioRecorder } from "@/components/StreamingAudioRecorder";
@@ -20,15 +20,17 @@ import { VoiceJournal } from "@/components/VoiceJournal";
 import { Library as LibraryView } from "@/components/Library";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { ProjectSidebar } from "@/components/ProjectSidebar";
+import { WorkspacesGrid } from "@/components/WorkspacesGrid";
+import { WorkspaceIcon } from "@/components/WorkspaceIcon";
 import { generateProjectMarkdown, downloadFile } from "@/lib/export";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FileText, StickyNote } from "lucide-react";
 import { BrandIdentifier } from "@/components/BrandIdentifier";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   subscribeToProjects,
-  getWorkspaceName,
   createProject,
   updateProject,
   softDeleteProject,
@@ -81,6 +83,7 @@ const FEATURE_CARDS = [
 ];
 
 const TABS = [
+  { id: "workspaces",label: "My WorkSpaces", icon: LayoutGrid, color: "text-violet-400", glow: "shadow-violet-500/20" },
   { id: "flow",     label: "Flow",      icon: Mic,       color: "text-blue-400",    glow: "shadow-blue-500/20" },
   { id: "journal",  label: "Journal",   icon: BookOpen,  color: "text-amber-400",   glow: "shadow-amber-500/20" },
   { id: "memo",     label: "Memo",      icon: StickyNote,color: "text-sky-400",     glow: "shadow-sky-500/20" },
@@ -93,7 +96,7 @@ const TABS = [
 
 export default function Dashboard() {
   // Core UI state
-  const [activeTab, setActiveTab] = useState("flow");
+  const [activeTab, setActiveTab] = useState("workspaces");
   const { user, logout } = useAuth();
   const router = useRouter();
 
@@ -106,8 +109,8 @@ export default function Dashboard() {
 
   // Project / workspace state
   const [projects, setProjects] = useState<ResearchProject[]>([]);
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
-  const [workspaceName, setWorkspaceName] = useState("My Workspace");
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasAutoLoadedRef = useRef(false);
@@ -118,6 +121,7 @@ export default function Dashboard() {
     if (!user) return;
     return subscribeToProjects(user.uid, (data) => {
       setProjects(data);
+      setProjectsLoaded(true);
       // Auto-load most recently active project only once on initial mount
       if (!hasAutoLoadedRef.current && data.length > 0) {
         hasAutoLoadedRef.current = true;
@@ -131,10 +135,6 @@ export default function Dashboard() {
     });
   }, [user]);
 
-  useEffect(() => {
-    if (!user) return;
-    getWorkspaceName(user.uid).then(setWorkspaceName);
-  }, [user]);
 
   // ── Auto-save (1.5 s debounce) ─────────────────────────────────────────────
 
@@ -166,7 +166,7 @@ export default function Dashboard() {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [sources, activeTone, activeLanguage, currentStudioOutput, deepDiveTranscript, activeProjectId]);
+  }, [sources, activeTone, activeLanguage, currentStudioOutput, deepDiveTranscript, activeProjectId, user]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -175,13 +175,27 @@ export default function Dashboard() {
     router.push("/login");
   };
 
-  // Auto-create project when first source is dropped in
+  // Auto-create or Auto-rename project when first source is dropped in
   const handleSourcesChange = async (newSources: Source[]) => {
     setSources(newSources);
-    if (!activeProjectId && newSources.length > 0 && user) {
+
+    if (newSources.length > 0 && user) {
       const firstTitle = newSources[0].title.replace(/\.[^.]+$/, "").slice(0, 40);
-      const id = await createProject(user.uid, firstTitle || "Untitled Project");
-      setActiveProjectId(id);
+      
+      // Auto-create if no active project
+      if (!activeProjectId) {
+        const id = await createProject(user.uid, firstTitle || "Untitled WorkSpace");
+        setActiveProjectId(id);
+      } 
+      // Auto-rename if active project is still default
+      else {
+        const currentProject = projects.find(p => p.id === activeProjectId);
+        if (currentProject && (currentProject.name === "Untitled WorkSpace" || currentProject.name === "Untitled Project" || currentProject.name === "Untitled notebook")) {
+          if (firstTitle) {
+            updateProject(user.uid, activeProjectId, { name: firstTitle });
+          }
+        }
+      }
     }
   };
 
@@ -204,6 +218,7 @@ export default function Dashboard() {
     setCurrentStudioOutput(null);
     setDeepDiveTranscript(null);
     setSaveStatus("saved");
+    setActiveTab("research");
   };
 
   // Legacy Library restore (item-based)
@@ -232,21 +247,9 @@ export default function Dashboard() {
     downloadFile(md, `${title.toLowerCase().replace(/\s+/g, "-")}.md`, "text/markdown");
   };
 
-  // ── Project rename / delete state ─────────────────────────────────────────
-
-  const [isRenamingProject, setIsRenamingProject] = useState(false);
-  const [projectNameDraft, setProjectNameDraft] = useState("");
-  const [isRenamingSaving, setIsRenamingSaving] = useState(false);
+  // ── Project delete state ──────────────────────────────────────────────────
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
   const [isDeletingProject, setIsDeletingProject] = useState(false);
-
-  const handleRenameProject = async () => {
-    if (!user || !activeProjectId || !projectNameDraft.trim()) return;
-    setIsRenamingSaving(true);
-    await updateProject(user.uid, activeProjectId, { name: projectNameDraft.trim() });
-    setIsRenamingProject(false);
-    setIsRenamingSaving(false);
-  };
 
   const handleDeleteActiveProject = async () => {
     if (!user || !activeProjectId) return;
@@ -290,13 +293,24 @@ export default function Dashboard() {
           <header className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <BrandIdentifier size={28} />
-              {/* Workspace name — editable */}
-              {user && (
+              {/* Active Workspace / Project name — editable */}
+              {user && activeProject ? (
                 <WorkspaceHeader
-                  uid={user.uid}
-                  name={workspaceName}
-                  onChange={setWorkspaceName}
+                  name={activeProject.name}
+                  workspaceId={activeProject.id}
+                  onSave={async (newName) => {
+                    await updateProject(user.uid, activeProject.id, { name: newName });
+                  }}
                 />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-white/[0.04] border border-white/8">
+                    <FolderOpen className="w-3.5 h-3.5 text-white/30" />
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/30 hidden sm:inline-block">
+                    {activeTab === "workspaces" ? "Home" : "Dashboard"}
+                  </span>
+                </div>
               )}
             </div>
             <div className="flex items-center gap-3">
@@ -322,21 +336,33 @@ export default function Dashboard() {
           </header>
 
           {/* ── Tab Navigation ──────────────────────────────────────────────── */}
-          <nav className="flex items-center justify-center gap-1 p-1.5 bg-white/[0.04] rounded-2xl border border-white/8 w-fit mx-auto backdrop-blur-sm flex-wrap">
+          <nav className="flex items-center gap-1 p-1.5 bg-white/[0.04] rounded-2xl border border-white/8 w-full overflow-x-auto scrollbar-none backdrop-blur-sm"
+            style={{ scrollbarWidth: "none" }}
+            aria-label="Main navigation"
+          >
             {TABS.map((tab) => (
-              <button
+              <motion.button
                 key={tab.id}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200",
+                  "relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200",
                   activeTab === tab.id
-                    ? "bg-white/10 text-white border border-white/15 shadow-lg backdrop-blur-sm"
-                    : "text-white/80 hover:text-white hover:bg-white/5"
+                    ? "text-white shadow-lg"
+                    : "text-white/60 hover:text-white hover:bg-white/5"
                 )}
               >
+                {activeTab === tab.id && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute inset-0 bg-white/10 border border-white/15 rounded-xl -z-10 shadow-[0_0_20px_rgba(255,255,255,0.03)]"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
                 <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? tab.color : "")} />
                 {tab.label}
-              </button>
+              </motion.button>
             ))}
           </nav>
 
@@ -348,13 +374,37 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* ── WORKSPACES TAB ──────────────────────────────────────────────── */}
+          {activeTab === "workspaces" && (
+            <section className="space-y-10">
+              {user && (
+                <WorkspacesGrid
+                  uid={user.uid}
+                  projects={projects}
+                  isLoaded={projectsLoaded}
+                  onSelectProject={handleSelectProject}
+                  onProjectCreated={handleProjectCreated}
+                />
+              )}
+            </section>
+          )}
+
           {/* ── FLOW TAB ────────────────────────────────────────────────────── */}
           {activeTab === "flow" && (
             <section className="space-y-10">
-              <div className="text-center space-y-2">
-                <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white">Your Workspace</h2>
-                <p className="text-white/70 font-light">Dictate, type, or paste — GPT-5.4 handles the rest.</p>
-              </div>
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center space-y-4 max-w-2xl mx-auto"
+              >
+                <div className="w-16 h-16 mx-auto rounded-3xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-2xl shadow-blue-500/10">
+                  <Mic className="w-8 h-8 text-blue-400" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-white">Your Workspace</h2>
+                  <p className="text-white/50 font-medium leading-relaxed italic">Dictate, type, or paste — GPT-5.4 handles the friction of thinking.</p>
+                </div>
+              </motion.div>
               <StreamingAudioRecorder />
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -393,19 +443,37 @@ export default function Dashboard() {
 
           {/* ── JOURNAL TAB ─────────────────────────────────────────────────── */}
           <section className={cn("space-y-10", activeTab !== "journal" && "hidden")}>
-            <div className="text-center space-y-2">
-                <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white">Voice Journal</h2>
-                <p className="text-white/70 font-light">Record your thoughts, enhance with AI, and save privately.</p>
-              </div>
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center space-y-4 max-w-2xl mx-auto"
+              >
+                <div className="w-16 h-16 mx-auto rounded-3xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-2xl shadow-amber-500/10">
+                  <BookOpen className="w-8 h-8 text-amber-400" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-white">Voice Journal</h2>
+                  <p className="text-white/50 font-medium leading-relaxed italic">Record your sequence of thoughts, enhanced by AI precision.</p>
+                </div>
+              </motion.div>
               <VoiceJournal entryType="journal" />
           </section>
 
           {/* ── MEMO TAB ────────────────────────────────────────────────────── */}
           <section className={cn("space-y-10", activeTab !== "memo" && "hidden")}>
-            <div className="text-center space-y-2">
-                <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white">Voice Memo</h2>
-                <p className="text-white/70 font-light">Record a quick thought or note and save it in seconds.</p>
-              </div>
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center space-y-4 max-w-2xl mx-auto"
+              >
+                <div className="w-16 h-16 mx-auto rounded-3xl bg-sky-500/10 flex items-center justify-center border border-sky-500/20 shadow-2xl shadow-sky-500/10">
+                  <StickyNote className="w-8 h-8 text-sky-400" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-white">Voice Memo</h2>
+                  <p className="text-white/50 font-medium leading-relaxed italic">The fastest way to capture a spark. Private and persistent.</p>
+                </div>
+              </motion.div>
               <VoiceJournal entryType="memo" />
             </section>
 
@@ -447,54 +515,22 @@ export default function Dashboard() {
 
                   {/* Active project status bar — interactive rename + delete */}
                   <div className="flex items-center gap-3 px-4 py-3 bg-white/[0.03] border border-white/8 rounded-2xl">
-                    <FolderOpen className="w-4 h-4 text-violet-400 shrink-0" />
+                    <WorkspaceIcon workspaceId={activeProject?.id ?? ""} className="w-4 h-4 text-violet-400 shrink-0" />
 
-                    {/* Name / rename input */}
+                    {/* Name */}
                     <div className="flex-1 min-w-0">
-                      {isRenamingProject && activeProject ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            autoFocus
-                            value={projectNameDraft}
-                            onChange={(e) => setProjectNameDraft(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") handleRenameProject();
-                              if (e.key === "Escape") setIsRenamingProject(false);
-                            }}
-                            className="flex-1 min-w-0 bg-white/[0.06] border border-violet-500/30 rounded-lg px-3 py-1 text-sm font-semibold text-white focus:outline-none focus:border-violet-400/60"
-                          />
-                          <button
-                            onClick={handleRenameProject}
-                            disabled={isRenamingSaving}
-                            className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors shrink-0"
-                            title="Save name"
-                          >
-                            {isRenamingSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                          </button>
-                          <button
-                            onClick={() => setIsRenamingProject(false)}
-                            className="p-1.5 rounded-lg hover:bg-white/8 text-white/30 hover:text-white/60 transition-colors shrink-0"
-                            title="Cancel"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <p className="text-sm font-semibold text-white/70 truncate">
-                            {activeProject?.name ?? "No project active"}
-                          </p>
-                          <p className="text-[10px] text-white/25">
-                            {activeProject
-                              ? `${sources.length} source${sources.length !== 1 ? "s" : ""} · auto-saved to Library`
-                              : "Add a source below to automatically start a new project"}
-                          </p>
-                        </>
-                      )}
+                      <p className="text-sm font-semibold text-white/70 truncate">
+                        {activeProject?.name ?? "No project active"}
+                      </p>
+                      <p className="text-[10px] text-white/25">
+                        {activeProject
+                          ? `${sources.length} resource${sources.length !== 1 ? "s" : ""} · auto-saved`
+                          : "Add a resource below to automatically create a workspace"}
+                      </p>
                     </div>
 
                     {/* Save status */}
-                    {!isRenamingProject && !confirmDeleteProject && (
+                    {!confirmDeleteProject && (
                       <>
                         {saveStatus === "saving" && (
                           <span className="text-[10px] text-amber-400 font-bold animate-pulse shrink-0">Saving…</span>
@@ -506,7 +542,7 @@ export default function Dashboard() {
                     )}
 
                     {/* Action buttons — always visible when a project is active */}
-                    {activeProject && !isRenamingProject && (
+                    {activeProject && (
                       <div className="flex items-center gap-1 shrink-0">
                         {confirmDeleteProject ? (
                           <div className="flex items-center gap-1.5">
@@ -526,24 +562,14 @@ export default function Dashboard() {
                             </button>
                           </div>
                         ) : (
-                          <>
-                            <button
-                              onClick={() => { setProjectNameDraft(activeProject.name); setIsRenamingProject(true); }}
-                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/70 transition-all text-[10px] font-semibold border border-white/8"
-                              title="Rename project"
-                            >
-                              <Pencil className="w-3 h-3" />
-                              Rename
-                            </button>
-                            <button
-                              onClick={() => setConfirmDeleteProject(true)}
-                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-500/5 hover:bg-red-500/15 text-white/30 hover:text-red-400 transition-all text-[10px] font-semibold border border-white/8 hover:border-red-500/20"
-                              title="Delete project"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              Delete
-                            </button>
-                          </>
+                          <button
+                            onClick={() => setConfirmDeleteProject(true)}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-500/5 hover:bg-red-500/15 text-white/30 hover:text-red-400 transition-all text-[10px] font-semibold border border-white/8 hover:border-red-500/20"
+                            title="Delete project"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Delete
+                          </button>
                         )}
                       </div>
                     )}

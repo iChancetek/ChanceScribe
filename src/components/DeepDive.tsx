@@ -4,12 +4,40 @@ import { useState, useRef } from "react";
 import { Loader2, Play, Pause, Download, Headphones, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Source } from "./SourceUploader";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface DeepDiveProps {
   sources: Source[];
   language: string;
   onTranscriptGenerated?: (transcript: string) => void;
 }
+
+const Waveform = ({ isPlaying }: { isPlaying: boolean }) => {
+  const bars = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+  return (
+    <div className="flex items-center justify-center gap-[3px] h-12">
+      {bars.map((bar, i) => (
+        <motion.div
+          key={i}
+          initial={{ height: 4 }}
+          animate={{ 
+            height: isPlaying ? [4, 24, 8, 32, 12, 4] : 4,
+          }}
+          transition={{
+            repeat: isPlaying ? Infinity : 0,
+            duration: 0.8,
+            delay: i * 0.05,
+            ease: "easeInOut"
+          }}
+          className={cn(
+            "w-1 rounded-full",
+            isPlaying ? "bg-purple-500/60" : "bg-purple-500/20"
+          )}
+        />
+      ))}
+    </div>
+  );
+};
 
 export function DeepDive({ sources, language, onTranscriptGenerated }: DeepDiveProps) {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -91,9 +119,26 @@ export function DeepDive({ sources, language, onTranscriptGenerated }: DeepDiveP
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <div className="writing-pad !p-12 text-center space-y-6">
-        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-purple-500/10 to-accent/10 flex items-center justify-center">
-          <Headphones className="w-10 h-10 text-purple-500/60" />
+      <div className="writing-pad !p-12 text-center space-y-6 relative overflow-hidden">
+        {/* Animated Background Pulse */}
+        <AnimatePresence>
+          {isPlaying && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1.2 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-purple-500/5 rounded-3xl blur-3xl pointer-events-none"
+            />
+          )}
+        </AnimatePresence>
+
+        <div className="relative z-10 w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-purple-500/10 to-accent/10 flex items-center justify-center">
+          <motion.div
+            animate={isPlaying ? { scale: [1, 1.1, 1] } : {}}
+            transition={{ repeat: Infinity, duration: 2 }}
+          >
+            <Headphones className={cn("w-10 h-10 transition-colors", isPlaying ? "text-purple-500" : "text-purple-500/60")} />
+          </motion.div>
         </div>
 
         <div className="space-y-2">
@@ -109,12 +154,14 @@ export function DeepDive({ sources, language, onTranscriptGenerated }: DeepDiveP
           </p>
         ) : !audioUrl ? (
           <div className="flex flex-col items-center gap-4">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={generateDeepDive}
               disabled={isGenerating}
               className={cn(
                 "px-8 py-4 bg-primary text-white rounded-full font-semibold text-base transition-all shadow-lg shadow-black/10",
-                isGenerating ? "animate-pulse cursor-wait" : "hover:scale-[1.02] hover:bg-primary/90"
+                isGenerating ? "animate-pulse cursor-wait" : "hover:bg-primary/90"
               )}
             >
               {isGenerating ? (
@@ -128,7 +175,7 @@ export function DeepDive({ sources, language, onTranscriptGenerated }: DeepDiveP
                   Generate Deep Dive
                 </span>
               )}
-            </button>
+            </motion.button>
 
             {/* Cancel button during generation */}
             {isGenerating && (
@@ -142,42 +189,47 @@ export function DeepDive({ sources, language, onTranscriptGenerated }: DeepDiveP
             )}
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
+            {/* Waveform Visualization */}
+            <Waveform isPlaying={isPlaying} />
+
             {/* Player */}
             <div className="flex items-center justify-center gap-4">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={togglePlayback}
-                className="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center hover:scale-105 transition-transform shadow-xl shadow-black/10"
+                className="w-20 h-20 rounded-full bg-primary text-white flex items-center justify-center shadow-2xl shadow-purple-500/20"
               >
-                {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
-              </button>
+                {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
+              </motion.button>
             </div>
 
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={togglePlayback}
-                className="px-5 py-2 text-sm font-medium border border-black/10 rounded-full hover:bg-secondary/50 transition-colors flex items-center gap-2"
+                className="px-6 py-2.5 text-sm font-medium border border-black/10 rounded-full hover:bg-secondary/50 transition-colors flex items-center gap-2"
               >
-                {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                 {isPlaying ? "Pause" : "Play"}
               </button>
               <button
                 onClick={downloadAudio}
-                className="px-5 py-2 text-sm font-medium border border-black/10 rounded-full hover:bg-secondary/50 transition-colors flex items-center gap-2"
+                className="px-6 py-2.5 text-sm font-medium border border-black/10 rounded-full hover:bg-secondary/50 transition-colors flex items-center gap-2"
               >
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-4 h-4" />
                 Download MP3
               </button>
               <button
                 onClick={generateDeepDive}
                 disabled={isGenerating}
-                className="px-5 py-2 text-sm font-medium text-accent border border-accent/20 rounded-full hover:bg-accent/5 transition-colors"
+                className="px-6 py-2.5 text-sm font-medium text-accent border border-accent/20 rounded-full hover:bg-accent/5 transition-colors"
               >
                 Regenerate
               </button>
             </div>
 
-            <p className="text-[10px] uppercase tracking-widest text-foreground/30">
+            <p className="text-[10px] uppercase tracking-widest text-foreground/30 font-bold">
               Powered by GPT-5.4 · Nova & Echo Voices
             </p>
           </div>
@@ -190,12 +242,18 @@ export function DeepDive({ sources, language, onTranscriptGenerated }: DeepDiveP
           { title: "Two AI Hosts", desc: "Alex (Nova) explains concepts while Sam (Echo) asks the tough questions.", icon: "🎙️" },
           { title: "Source Grounded", desc: "Every discussion point is rooted in your uploaded documents and articles.", icon: "📄" },
           { title: "Share Anywhere", desc: "Download the MP3 and share via iMessage, Slack, email, or any platform.", icon: "📤" },
-        ].map((item) => (
-          <div key={item.title} className="p-5 bg-white/50 border border-black/5 rounded-2xl space-y-2">
+        ].map((item, i) => (
+          <motion.div 
+            key={item.title} 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="p-5 bg-white/50 border border-black/5 rounded-2xl space-y-2 backdrop-blur-sm shadow-sm"
+          >
             <span className="text-2xl">{item.icon}</span>
             <h4 className="text-xs font-bold text-primary/80">{item.title}</h4>
-            <p className="text-[11px] text-foreground/40 leading-relaxed">{item.desc}</p>
-          </div>
+            <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">{item.desc}</p>
+          </motion.div>
         ))}
       </div>
     </div>

@@ -1,25 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pencil, Check, X, Layers } from "lucide-react";
-import { updateWorkspaceName } from "@/lib/firebase/projects";
+import { WorkspaceIcon } from "./WorkspaceIcon";
 
 interface WorkspaceHeaderProps {
-  uid: string;
   name: string;
-  onChange: (name: string) => void;
+  workspaceId?: string;
+  onSave: (name: string) => Promise<void> | void;
 }
 
-export function WorkspaceHeader({ uid, name, onChange }: WorkspaceHeaderProps) {
+export function WorkspaceHeader({ name, workspaceId, onSave }: WorkspaceHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(name);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Sync draft when name changes externally
+  useEffect(() => {
+    setDraft(name);
+  }, [name]);
+
   const save = async () => {
-    if (!draft.trim()) return;
+    if (!draft.trim() || draft.trim() === name) {
+      setIsEditing(false);
+      return;
+    }
     setIsSaving(true);
-    await updateWorkspaceName(uid, draft.trim());
-    onChange(draft.trim());
+    await onSave(draft.trim());
     setIsEditing(false);
     setIsSaving(false);
   };
@@ -32,7 +39,11 @@ export function WorkspaceHeader({ uid, name, onChange }: WorkspaceHeaderProps) {
   return (
     <div className="flex items-center gap-2">
       <div className="p-1.5 rounded-lg bg-white/[0.04] border border-white/8">
-        <Layers className="w-3.5 h-3.5 text-white/30" />
+        {workspaceId ? (
+          <WorkspaceIcon workspaceId={workspaceId} className="w-3.5 h-3.5 text-violet-400" />
+        ) : (
+          <Layers className="w-3.5 h-3.5 text-white/30" />
+        )}
       </div>
       {isEditing ? (
         <div className="flex items-center gap-1.5">

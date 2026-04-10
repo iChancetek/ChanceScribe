@@ -21,7 +21,7 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     value: "1:424174249269:web:846deaaab4d4a8b49a987c"
   - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
-    value: "G-GZJ66X1F68"
+    value: "G-R43T6ZN5Q0"
 
 # Secrets should be managed in the Firebase Console and will be available to Cloud Run
 secrets:

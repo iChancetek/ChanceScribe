@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Source } from "./SourceUploader";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface StudioProps {
   sources: Source[];
@@ -34,6 +35,41 @@ interface QuizQuestion { question: string; options: string[]; correct: string; }
 interface MindMapNode { label: string; children: MindMapNode[]; }
 interface Slide { number: number; title: string; bullets: string[]; speakerNote: string; }
 
+// ─── Animation Variants ────────────────────────────────────────────────────────
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    scale: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 400,
+      damping: 30,
+    }
+  },
+};
+
+const fadeUpVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.3 }
+  },
+};
+
+
 // ─── Slide Deck Parser ──────────────────────────────────────────────────────
 function parseSlideDeck(raw: string): Slide[] {
   const sections = raw.split(/^---$/m).map(s => s.trim()).filter(Boolean);
@@ -56,7 +92,12 @@ function SlideCard({ slide, total, onPrev, onNext }: {
   onPrev: () => void; onNext: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-4">
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="flex flex-col gap-4"
+    >
       {/* Slide card */}
       <div className="relative rounded-2xl bg-gradient-to-br from-violet-500/10 to-violet-600/5 border border-violet-500/20 p-8 min-h-[280px] flex flex-col">
         {/* Slide number badge */}
@@ -69,20 +110,30 @@ function SlideCard({ slide, total, onPrev, onNext }: {
         {slide.bullets.length > 0 && (
           <ul className="flex-1 space-y-2.5">
             {slide.bullets.map((b, i) => (
-              <li key={i} className="flex items-start gap-3">
+              <motion.li 
+                key={i} 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="flex items-start gap-3"
+              >
                 <span className="w-1.5 h-1.5 rounded-full bg-violet-400/70 shrink-0 mt-2" />
                 <span className="text-sm text-white/80 leading-relaxed">{b}</span>
-              </li>
+              </motion.li>
             ))}
           </ul>
         )}
       </div>
       {/* Speaker Note */}
       {slide.speakerNote && (
-        <div className="flex items-start gap-3 px-4 py-3 bg-white/[0.03] border border-white/8 rounded-xl">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-start gap-3 px-4 py-3 bg-white/[0.03] border border-white/8 rounded-xl"
+        >
           <span className="text-[10px] font-black uppercase tracking-widest text-white/25 mt-0.5 shrink-0">Note</span>
           <p className="text-xs text-white/50 leading-relaxed italic">{slide.speakerNote}</p>
-        </div>
+        </motion.div>
       )}
       {/* Navigation */}
       <div className="flex items-center justify-between">
@@ -112,20 +163,24 @@ function SlideCard({ slide, total, onPrev, onNext }: {
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
 function MindMapViz({ node, depth = 0 }: { node: MindMapNode; depth?: number }) {
   const colors = ["text-teal-300", "text-blue-300", "text-violet-300", "text-pink-300"];
   return (
-    <div className={cn("flex flex-col gap-1.5", depth > 0 && "ml-6 pl-3 border-l border-white/10")}>
+    <motion.div 
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      className={cn("flex flex-col gap-1.5", depth > 0 && "ml-6 pl-3 border-l border-white/10")}
+    >
       <div className={cn("flex items-center gap-2 group", colors[depth % colors.length])}>
         {depth > 0 && <ChevronRight className="w-3 h-3 opacity-40 shrink-0" />}
         <span className={cn("font-semibold text-white", depth === 0 ? "text-base" : depth === 1 ? "text-sm" : "text-xs text-white/70")}>{node.label}</span>
       </div>
       {node.children?.map((child, i) => <MindMapViz key={i} node={child} depth={depth + 1} />)}
-    </div>
+    </motion.div>
   );
 }
 
@@ -246,10 +301,18 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
     <div className="space-y-6">
       {/* Mode Selector */}
       <div className="relative">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x"
+        >
           {MODES.map(mode => (
-            <button
+            <motion.button
               key={mode.id}
+              variants={itemVariants}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setActiveMode(mode.id)}
               disabled={mode.comingSoon}
               className={cn(
@@ -263,19 +326,22 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
               <mode.icon className={cn("w-5 h-5", activeMode === mode.id ? mode.color : "text-white/60 group-hover:text-white/80")} />
               <span className={cn("text-[10px] font-bold uppercase tracking-wide", activeMode === mode.id ? "text-white" : "text-white/60")}>{mode.label}</span>
               {mode.comingSoon && <span className="text-[8px] text-amber-400 font-bold uppercase tracking-wide">Soon</span>}
-            </button>
+            </motion.button>
           ))}
-        </div>
+        </motion.div>
       </div>
 
       {/* Output area */}
-      <div className={cn(
-        "min-h-[320px] rounded-3xl border bg-gradient-to-br p-6 flex flex-col",
-        currentMode.bg, currentMode.border
-      )}>
+      <motion.div 
+        layout
+        className={cn(
+          "min-h-[320px] rounded-3xl border bg-gradient-to-br p-6 flex flex-col",
+          currentMode.bg, currentMode.border
+        )}
+      >
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2.5">
+          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2.5">
             <div className={cn("p-2 rounded-xl bg-white/5")}>
               <currentMode.icon className={cn("w-5 h-5", currentMode.color)} />
             </div>
@@ -283,7 +349,7 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
               <p className="text-sm font-bold text-white">{currentMode.label}</p>
               <p className="text-[10px] text-white/70">{currentMode.desc}</p>
             </div>
-          </div>
+          </motion.div>
           <div className="flex items-center gap-2">
             {isGenerating && (
               <button
@@ -318,254 +384,306 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-
-          {/* Empty state */}
-          {!hasOutput && !isGenerating && (
-            <div className="h-full flex flex-col items-center justify-center gap-4 text-center py-8">
-              <div className={cn("p-4 rounded-2xl bg-white/5")}>
-                <currentMode.icon className={cn("w-8 h-8", currentMode.color)} />
-              </div>
-              <div>
-                <p className="text-base font-bold text-white mb-1">Generate {currentMode.label}</p>
-                <p className="text-xs text-white/70 max-w-xs">{currentMode.desc} from your {sources.length} source{sources.length !== 1 ? "s" : ""}</p>
-              </div>
-              <button
+          <AnimatePresence mode="wait">
+            {/* Empty state */}
+            {!hasOutput && !isGenerating && (
+              <motion.div 
+                key="empty"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="h-full flex flex-col items-center justify-center gap-4 text-center py-8"
+              >
+                <div className={cn("p-4 rounded-2xl bg-white/5")}>
+                  <currentMode.icon className={cn("w-8 h-8", currentMode.color)} />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-white mb-1">Generate {currentMode.label}</p>
+                  <p className="text-xs text-white/70 max-w-xs">{currentMode.desc} from your {sources.length} source{sources.length !== 1 ? "s" : ""}</p>
+                </div>
+                <motion.button
+                layout
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => generate()}
                 disabled={!sources.length || currentMode.comingSoon}
                 className={cn(
-                  "flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-200",
-                  "bg-white/10 hover:bg-white/15 text-white border border-white/15 hover:scale-[1.02]",
+                  "flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-200 shadow-xl shadow-black/10",
+                  "bg-white/10 hover:bg-white/15 text-white border border-white/15 hover:border-white/30 hover:shadow-[0_0_20px_rgba(255,255,255,0.05)]",
                   (!sources.length || currentMode.comingSoon) && "opacity-40 cursor-not-allowed"
                 )}
               >
                 <Sparkles className="w-4 h-4" />
                 Generate
-              </button>
-              {!sources.length && (
-                <p className="text-[10px] text-white/60 font-medium bg-white/5 px-3 py-1 rounded-full">Add sources to the Research panel first</p>
-              )}
-            </div>
-          )}
+              </motion.button>
+                {!sources.length && (
+                  <p className="text-[10px] text-white/60 font-medium bg-white/5 px-3 py-1 rounded-full">Add sources to the Research panel first</p>
+                )}
+              </motion.div>
+            )}
 
-          {/* Generating state */}
-          {isGenerating && (
-            <div className="flex flex-col items-center justify-center gap-4 py-12">
-              <div className="relative">
-                <Loader2 className={cn("w-8 h-8 animate-spin", currentMode.color)} />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-semibold text-white/70">Generating {currentMode.label}...</p>
-                <p className="text-xs text-white/40 mt-1">This may take a moment</p>
-              </div>
-              <button
-                onClick={cancelGeneration}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-400 text-xs font-bold border border-red-500/25 transition-all"
+            {/* Generating state */}
+            {isGenerating && (
+              <motion.div 
+                key="generating"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center justify-center gap-4 py-12"
               >
-                <Square className="w-3 h-3 fill-current" />
-                Cancel Generation
-              </button>
-              {streamText && (
-                <div className="w-full mt-2 text-sm text-white/70 whitespace-pre-wrap font-mono max-h-48 overflow-y-auto leading-relaxed">
-                  {streamText}
+                <div className="relative">
+                  <Loader2 className={cn("w-8 h-8 animate-spin", currentMode.color)} />
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Slide Deck — parsed visual cards */}
-          {!isGenerating && activeMode === "slides" && streamText && (() => {
-            const slides = parseSlideDeck(streamText);
-            if (slides.length === 0) {
-              return <p className="text-sm text-white/50 text-center py-8">Could not parse slides. Try regenerating.</p>;
-            }
-            const slide = slides[slideIndex] ?? slides[0];
-            return (
-              <div className="space-y-2">
-                {/* Slide count header */}
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs text-white/40 font-semibold">{slides.length} slides generated</p>
-                  <button
-                    onClick={() => downloadText(streamText, "workspaceiq-slides.md")}
-                    className="flex items-center gap-1.5 text-[10px] text-white/30 hover:text-white/60 transition-colors"
-                  >
-                    <Download className="w-3 h-3" />
-                    Download all slides
-                  </button>
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-white/70">Generating {currentMode.label}...</p>
+                  <p className="text-xs text-white/40 mt-1">This may take a moment</p>
                 </div>
-                <SlideCard
-                  slide={slide}
-                  total={slides.length}
-                  onPrev={() => setSlideIndex(i => Math.max(0, i - 1))}
-                  onNext={() => setSlideIndex(i => Math.min(slides.length - 1, i + 1))}
-                />
-              </div>
-            );
-          })()}
-
-          {/* Streaming text output (report only) */}
-          {!isGenerating && activeMode === "report" && streamText && (
-            <div className="prose prose-invert prose-sm max-w-none text-white/80 whitespace-pre-wrap leading-relaxed text-sm">
-              {streamText}
-            </div>
-          )}
-
-          {/* Flashcards */}
-          {!isGenerating && activeMode === "flashcards" && jsonData && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {flashcards.length === 0 ? (
-                <p className="text-sm text-white/50 col-span-2 text-center py-8">No flashcards were generated. Try again.</p>
-              ) : flashcards.map((card: Flashcard, i: number) => (
-                <div
-                  key={i}
-                  onClick={() => setFlippedCard(flippedCard === i ? null : i)}
-                  className={cn(
-                    "relative p-5 rounded-2xl border cursor-pointer transition-all duration-200 hover:scale-[1.01] min-h-[100px]",
-                    flippedCard === i ? "bg-white/15 border-white/20" : "bg-white/5 border-white/10 hover:bg-white/10"
-                  )}
-                >
-                  <div className="text-[9px] uppercase tracking-widest font-bold text-white/30 mb-2">
-                    {flippedCard === i ? "Answer" : `Card ${i + 1}`}
-                  </div>
-                  <p className="text-sm text-white leading-relaxed">
-                    {flippedCard === i ? card.answer : card.question}
-                  </p>
-                  <div className="absolute bottom-3 right-3 text-[9px] text-white/20">
-                    {flippedCard === i ? "Tap to flip back" : "Tap to reveal"}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Quiz */}
-          {!isGenerating && activeMode === "quiz" && jsonData && (
-            <div className="space-y-5">
-              {quizQuestions.length === 0 ? (
-                <p className="text-sm text-white/50 text-center py-8">No quiz questions were generated. Try again.</p>
-              ) : quizQuestions.map((q: QuizQuestion, qi: number) => (
-                <div key={qi} className="space-y-2">
-                  <p className="text-sm font-bold text-white">{qi + 1}. {q.question}</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {q.options.map((opt, oi) => {
-                      const isSelected = quizSelected[qi] === opt;
-                      const isCorrect = quizRevealed && opt === q.correct;
-                      const isWrong = quizRevealed && isSelected && opt !== q.correct;
-                      return (
-                        <button
-                          key={oi}
-                          onClick={() => !quizRevealed && setQuizSelected(prev => ({ ...prev, [qi]: opt }))}
-                          className={cn(
-                            "text-left px-4 py-2.5 rounded-xl border text-xs font-medium transition-all",
-                            isCorrect ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" :
-                            isWrong ? "bg-red-500/20 border-red-500/40 text-red-300" :
-                            isSelected ? "bg-white/15 border-white/25 text-white" :
-                            "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
-                          )}
-                        >
-                          {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-              {quizQuestions.length > 0 && !quizRevealed && Object.keys(quizSelected).length > 0 && (
                 <button
-                  onClick={() => setQuizRevealed(true)}
-                  className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-sm font-bold text-white border border-white/15 transition-all"
+                  onClick={cancelGeneration}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-400 text-xs font-bold border border-red-500/25 transition-all"
                 >
-                  Check Answers
+                  <Square className="w-3 h-3 fill-current" />
+                  Cancel Generation
                 </button>
-              )}
-            </div>
-          )}
+                {streamText && (
+                  <div className="w-full mt-2 text-sm text-white/70 whitespace-pre-wrap font-mono max-h-48 overflow-y-auto leading-relaxed">
+                    {streamText}
+                  </div>
+                )}
+              </motion.div>
+            )}
 
-          {/* Mind Map */}
-          {!isGenerating && activeMode === "mindmap" && jsonData && (
-            <div className="p-2">
-              <MindMapViz node={jsonData} />
-            </div>
-          )}
-
-          {/* Infographic */}
-          {!isGenerating && activeMode === "infographic" && jsonData && (
-            <div className="space-y-5">
-              <div className="text-center space-y-1 pb-4 border-b border-white/10">
-                <p className="text-lg font-black text-white">{jsonData.title}</p>
-                <p className="text-xs text-white/50">{jsonData.subtitle}</p>
-              </div>
-              {jsonData.keyStats?.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {jsonData.keyStats.map((stat: any, i: number) => (
-                    <div key={i} className="text-center p-4 bg-white/5 rounded-2xl border border-white/8">
-                      <p className="text-2xl font-black text-orange-400">{stat.value}</p>
-                      <p className="text-[10px] font-bold text-white/70 mt-1">{stat.label}</p>
-                      {stat.context && <p className="text-[9px] text-white/35 mt-1">{stat.context}</p>}
+            {/* Slide Deck — parsed visual cards */}
+            {!isGenerating && activeMode === "slides" && streamText && (
+              <motion.div 
+                key="slides"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-4"
+              >
+                {(() => {
+                  const slides = parseSlideDeck(streamText);
+                  if (slides.length === 0) {
+                    return <p className="text-sm text-white/50 text-center py-8">Could not parse slides. Try regenerating.</p>;
+                  }
+                  const slide = slides[slideIndex] ?? slides[0];
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs text-white/40 font-semibold">{slides.length} slides generated</p>
+                        <button
+                          onClick={() => downloadText(streamText, "workspaceiq-slides.md")}
+                          className="flex items-center gap-1.5 text-[10px] text-white/30 hover:text-white/60 transition-colors"
+                        >
+                          <Download className="w-3 h-3" />
+                          Download all slides
+                        </button>
+                      </div>
+                      <SlideCard
+                        slide={slide}
+                        total={slides.length}
+                        onPrev={() => setSlideIndex(i => Math.max(0, i - 1))}
+                        onNext={() => setSlideIndex(i => Math.min(slides.length - 1, i + 1))}
+                      />
                     </div>
-                  ))}
-                </div>
-              )}
-              {jsonData.pullQuote && (
-                <blockquote className="border-l-4 border-orange-400/50 pl-4 italic text-sm text-white/70">
-                  "{jsonData.pullQuote}"
-                </blockquote>
-              )}
-              {jsonData.sections?.map((section: any, i: number) => (
-                <div key={i}>
-                  <p className="text-xs font-bold text-white/60 uppercase tracking-wider mb-2">{section.heading}</p>
-                  <ul className="space-y-1">
-                    {section.bullets?.map((b: string, j: number) => (
-                      <li key={j} className="text-xs text-white/60 flex items-start gap-2">
-                        <span className="text-orange-400 mt-0.5">•</span>{b}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
+                  );
+                })()}
+              </motion.div>
+            )}
 
-          {/* Data Table */}
-          {!isGenerating && activeMode === "datatable" && jsonData && (
-            <div className="space-y-4">
-              <p className="text-sm font-bold text-white">{jsonData.title}</p>
-              <div className="overflow-x-auto rounded-xl border border-white/10">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-white/10 bg-white/5">
-                      {jsonData.headers?.map((h: string, i: number) => (
-                        <th key={i} className="px-4 py-2.5 text-left font-bold text-white/60 whitespace-nowrap">{h}</th>
+            {/* Streaming text output (report only) */}
+            {!isGenerating && activeMode === "report" && streamText && (
+              <motion.div 
+                key="report"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="prose prose-invert prose-sm max-w-none text-white/80 whitespace-pre-wrap leading-relaxed text-sm"
+              >
+                {streamText}
+              </motion.div>
+            )}
+
+            {/* Flashcards */}
+            {!isGenerating && activeMode === "flashcards" && jsonData && (
+              <motion.div 
+                key="flashcards"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+              >
+                {flashcards.length === 0 ? (
+                  <p className="text-sm text-white/50 col-span-2 text-center py-8">No flashcards were generated. Try again.</p>
+                ) : flashcards.map((card: Flashcard, i: number) => (
+                  <motion.div
+                    key={i}
+                    variants={itemVariants}
+                    onClick={() => setFlippedCard(flippedCard === i ? null : i)}
+                    className={cn(
+                      "relative p-5 rounded-2xl border cursor-pointer transition-all duration-200 hover:scale-[1.01] min-h-[100px]",
+                      flippedCard === i ? "bg-white/15 border-white/20" : "bg-white/5 border-white/10 hover:bg-white/10"
+                    )}
+                  >
+                    <div className="text-[9px] uppercase tracking-widest font-bold text-white/30 mb-2">
+                      {flippedCard === i ? "Answer" : `Card ${i + 1}`}
+                    </div>
+                    <p className="text-sm text-white leading-relaxed">
+                      {flippedCard === i ? card.answer : card.question}
+                    </p>
+                    <div className="absolute bottom-3 right-3 text-[9px] text-white/20">
+                      {flippedCard === i ? "Tap to flip back" : "Tap to reveal"}
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+
+            {/* Quiz */}
+            {!isGenerating && activeMode === "quiz" && jsonData && (
+              <motion.div 
+                key="quiz"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-5"
+              >
+                {quizQuestions.length === 0 ? (
+                  <p className="text-sm text-white/50 text-center py-8">No quiz questions were generated. Try again.</p>
+                ) : quizQuestions.map((q: QuizQuestion, qi: number) => (
+                  <motion.div variants={fadeUpVariants} initial="hidden" animate="visible" key={qi} className="space-y-2">
+                    <p className="text-sm font-bold text-white">{qi + 1}. {q.question}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {q.options.map((opt, oi) => {
+                        const isSelected = quizSelected[qi] === opt;
+                        const isCorrect = quizRevealed && opt === q.correct;
+                        const isWrong = quizRevealed && isSelected && opt !== q.correct;
+                        return (
+                          <button
+                            key={oi}
+                            onClick={() => !quizRevealed && setQuizSelected(prev => ({ ...prev, [qi]: opt }))}
+                            className={cn(
+                              "text-left px-4 py-2.5 rounded-xl border text-xs font-medium transition-all",
+                              isCorrect ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" :
+                              isWrong ? "bg-red-500/20 border-red-500/40 text-red-300" :
+                              isSelected ? "bg-white/15 border-white/25 text-white" :
+                              "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+                            )}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                ))}
+                {quizQuestions.length > 0 && !quizRevealed && Object.keys(quizSelected).length > 0 && (
+                  <button
+                    onClick={() => setQuizRevealed(true)}
+                    className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-sm font-bold text-white border border-white/15 transition-all"
+                  >
+                    Check Answers
+                  </button>
+                )}
+              </motion.div>
+            )}
+
+            {/* Mind Map */}
+            {!isGenerating && activeMode === "mindmap" && jsonData && (
+              <motion.div key="mindmap" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-2">
+                <MindMapViz node={jsonData} />
+              </motion.div>
+            )}
+
+            {/* Infographic */}
+            {!isGenerating && activeMode === "infographic" && jsonData && (
+              <motion.div key="infographic" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+                <div className="text-center space-y-1 pb-4 border-b border-white/10">
+                  <p className="text-lg font-black text-white">{jsonData.title}</p>
+                  <p className="text-xs text-white/50">{jsonData.subtitle}</p>
+                </div>
+                {jsonData.keyStats?.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {jsonData.keyStats.map((stat: any, i: number) => (
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.1 }}
+                        key={i} 
+                        className="text-center p-4 bg-white/5 rounded-2xl border border-white/8"
+                      >
+                        <p className="text-2xl font-black text-orange-400">{stat.value}</p>
+                        <p className="text-[10px] font-bold text-white/70 mt-1">{stat.label}</p>
+                        {stat.context && <p className="text-[9px] text-white/35 mt-1">{stat.context}</p>}
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+                {jsonData.pullQuote && (
+                  <blockquote className="border-l-4 border-orange-400/50 pl-4 italic text-sm text-white/70">
+                    "{jsonData.pullQuote}"
+                  </blockquote>
+                )}
+                {jsonData.sections?.map((section: any, i: number) => (
+                  <div key={i}>
+                    <p className="text-xs font-bold text-white/60 uppercase tracking-wider mb-2">{section.heading}</p>
+                    <ul className="space-y-1">
+                      {section.bullets?.map((b: string, j: number) => (
+                        <li key={j} className="text-xs text-white/60 flex items-start gap-2">
+                          <span className="text-orange-400 mt-0.5">•</span>{b}
+                        </li>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {jsonData.rows?.map((row: string[], i: number) => (
-                      <tr key={i} className="border-b border-white/5 hover:bg-white/5">
-                        {row.map((cell, j) => (
-                          <td key={j} className="px-4 py-2 text-white/70 whitespace-nowrap">{cell}</td>
+                    </ul>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+
+            {/* Data Table */}
+            {!isGenerating && activeMode === "datatable" && jsonData && (
+              <motion.div key="datatable" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                <p className="text-sm font-bold text-white">{jsonData.title}</p>
+                <div className="overflow-x-auto rounded-xl border border-white/10">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/5">
+                        {jsonData.headers?.map((h: string, i: number) => (
+                          <th key={i} className="px-4 py-2.5 text-left font-bold text-white/60 whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {jsonData.summary && (
-                <p className="text-xs text-white/50 italic p-3 bg-white/5 rounded-xl">{jsonData.summary}</p>
-              )}
-            </div>
-          )}
+                    </thead>
+                    <tbody>
+                      {jsonData.rows?.map((row: string[], i: number) => (
+                        <tr key={i} className="border-b border-white/5 hover:bg-white/5">
+                          {row.map((cell, j) => (
+                            <td key={j} className="px-4 py-2 text-white/70 whitespace-nowrap">{cell}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {jsonData.summary && (
+                  <p className="text-xs text-white/50 italic p-3 bg-white/5 rounded-xl">{jsonData.summary}</p>
+                )}
+              </motion.div>
+            )}
 
-          {/* Error */}
-          {error && (
-            <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 px-4 py-3 rounded-xl">
-              <X className="w-4 h-4 shrink-0" />
-              {error}
-            </div>
-          )}
+            {/* Error */}
+            {error && (
+              <motion.div 
+                key="error"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 px-4 py-3 rounded-xl"
+              >
+                <X className="w-4 h-4 shrink-0" />
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div ref={bottomRef} />
         </div>
-      </div>
+      </motion.div>
 
       {/* Regenerate button when output exists */}
       {hasOutput && !isGenerating && (

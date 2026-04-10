@@ -10,6 +10,7 @@ import { Timestamp } from "firebase/firestore";
 import {
   ResearchProject, createProject, updateProject, softDeleteProject
 } from "@/lib/firebase/projects";
+import { WorkspaceIcon } from "./WorkspaceIcon";
 
 interface ProjectSidebarProps {
   uid: string;
@@ -47,12 +48,18 @@ export function ProjectSidebar({
 
   const handleCreate = async () => {
     setIsCreating(true);
-    const id = await createProject(uid, "Untitled Project");
-    onProjectCreated(id);
-    setIsCreating(false);
-    // Immediately start editing the new project name
-    setEditingId(id);
-    setEditName("Untitled Project");
+    try {
+      const id = await createProject(uid, "Untitled Project");
+      onProjectCreated(id);
+      // Immediately start editing the new project name
+      setEditingId(id);
+      setEditName("Untitled Project");
+    } catch (error) {
+      console.error("Failed to create workspace:", error);
+      alert("Failed to create workspace. Please check your permissions or try again.");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleRename = async (projectId: string) => {
@@ -199,7 +206,7 @@ export function ProjectSidebar({
                 className="w-full text-left px-3 py-2.5"
               >
                 <div className="flex items-start gap-2">
-                  <FolderOpen className={cn(
+                  <WorkspaceIcon workspaceId={project.id} className={cn(
                     "w-3.5 h-3.5 shrink-0 mt-0.5",
                     activeProjectId === project.id ? "text-violet-400" : "text-white/25"
                   )} />
