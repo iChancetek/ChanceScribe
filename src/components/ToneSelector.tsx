@@ -16,7 +16,7 @@ interface ToneSelectorProps {
 
 export function ToneSelector({ activeTone, onToneChange }: ToneSelectorProps) {
   return (
-    <div className="flex items-center gap-2 p-1 bg-secondary/50 rounded-full border border-black/5">
+    <div className="flex flex-nowrap items-center gap-2 p-1 bg-white/10 rounded-full border border-white/10 overflow-x-auto scrollbar-hide max-w-full">
       {TONES.map((tone) => (
         <button
           key={tone.id}
@@ -25,11 +25,11 @@ export function ToneSelector({ activeTone, onToneChange }: ToneSelectorProps) {
             "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
             activeTone === tone.id
               ? "bg-white text-black shadow-sm"
-              : "text-white/50 hover:text-white/80"
+              : "text-white/80 hover:text-white hover:bg-white/5"
           )}
         >
           <span>{tone.icon}</span>
-          <span className="hidden sm:inline">{tone.label}</span>
+          <span className="whitespace-nowrap">{tone.label}</span>
         </button>
       ))}
     </div>

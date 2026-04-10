@@ -46,7 +46,7 @@ export default function Home() {
           muted
           loop
           playsInline
-          poster="/og-image.png"
+
           className="absolute inset-0 w-full h-full object-cover opacity-[0.8]"
         >
           <source src="/videos/ChanceScribe.mp4" type="video/mp4" />

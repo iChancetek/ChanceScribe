@@ -18,7 +18,7 @@ interface VoiceSelectorProps {
 
 export function VoiceSelector({ activeVoice, onVoiceChange }: VoiceSelectorProps) {
   return (
-    <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-full border border-black/5">
+    <div className="flex flex-nowrap items-center gap-1 p-1 bg-white/10 rounded-full border border-white/10 overflow-x-auto scrollbar-hide max-w-full">
       {VOICES.map((voice) => (
         <button
           key={voice.id}
@@ -26,8 +26,8 @@ export function VoiceSelector({ activeVoice, onVoiceChange }: VoiceSelectorProps
           className={cn(
             "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
             activeVoice === voice.id
-              ? "bg-white text-primary shadow-sm"
-              : "text-foreground/40 hover:text-foreground/70"
+              ? "bg-white text-black shadow-sm"
+              : "text-white/80 hover:text-white hover:bg-white/5"
           )}
           title={voice.desc}
         >

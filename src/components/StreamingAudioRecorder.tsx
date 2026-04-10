@@ -192,30 +192,30 @@ export function StreamingAudioRecorder() {
   }, [transcript]);
 
   return (
-    <div className="flex flex-col h-full space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+    <div className="flex flex-col space-y-6 animate-in fade-in duration-700">
+      <div className="flex flex-col gap-6">
         <div className="flex flex-wrap items-center gap-3">
             <ToneSelector activeTone={activeTone} onToneChange={setActiveTone} />
             <LanguageSelector activeLanguage={activeLanguage} onLanguageChange={setActiveLanguage} />
             <VoiceSelector activeVoice={activeVoice} onVoiceChange={setActiveVoice} />
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center gap-3">
           {transcript && !isRecording && !isProcessing && (
-            <>
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <button 
                 onClick={handlePlayTTS}
                 disabled={isTTSLoading}
-                className="px-4 py-2 text-sm font-medium hover:bg-secondary rounded-full transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="px-4 py-2 text-xs font-semibold bg-white/5 hover:bg-white/10 rounded-full transition-colors flex items-center gap-2 border border-white/10 disabled:opacity-50"
               >
-                {isTTSLoading ? <Loader2 className="w-4 h-4 animate-spin text-accent" /> : isPlaying ? <Pause className="w-4 h-4 text-accent" /> : <Play className="w-4 h-4" />}
-                {isPlaying ? "Pause" : isTTSLoading ? "Loading..." : "Listen"}
+                {isTTSLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" /> : isPlaying ? <Pause className="w-3.5 h-3.5 text-blue-400" /> : <Play className="w-3.5 h-3.5" />}
+                {isPlaying ? "Pause" : isTTSLoading ? "..." : "Listen"}
               </button>
               <button 
                 onClick={copyToClipboard}
-                className="px-4 py-2 text-sm font-medium hover:bg-secondary rounded-full transition-colors flex items-center gap-2"
+                className="px-4 py-2 text-xs font-semibold bg-white/5 hover:bg-white/10 rounded-full transition-colors flex items-center gap-2 border border-white/10"
               >
-                {isCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                {isCopied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
                 {isCopied ? "Copied" : "Copy"}
               </button>
               {lastAudioBlob && (
@@ -223,29 +223,29 @@ export function StreamingAudioRecorder() {
                   onClick={() => {
                     const url = URL.createObjectURL(lastAudioBlob);
                     const a = document.createElement('a');
-                    a.href = url; a.download = 'chancescribe-voice.mp3'; a.click();
+                    a.href = url; a.download = 'workspaceiq-flow.mp3'; a.click();
                     URL.revokeObjectURL(url);
                   }}
-                  className="px-4 py-2 text-sm font-medium hover:bg-secondary rounded-full transition-colors flex items-center gap-2"
+                  className="px-4 py-2 text-xs font-semibold bg-white/5 hover:bg-white/10 rounded-full transition-colors flex items-center gap-2 border border-white/10"
                 >
-                  <Download className="w-4 h-4" /> MP3
+                  <Download className="w-3.5 h-3.5" /> MP3
                 </button>
               )}
-            </>
+            </div>
           )}
           <button
             onClick={isRecording ? stopRecording : startRecording}
             disabled={isProcessing}
             className={cn(
-              "flex items-center gap-3 px-6 py-3 rounded-full transition-all duration-300 font-medium",
+              "flex items-center gap-3 px-8 py-4 rounded-full transition-all duration-300 font-bold text-base shadow-2xl",
               isRecording 
-                ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/20" 
+                ? "bg-red-500 text-white animate-pulse shadow-red-500/40" 
                 : isProcessing 
-                  ? "bg-secondary text-foreground/50 cursor-not-allowed"
-                  : "bg-primary text-white hover:bg-primary/90 shadow-lg shadow-black/10 hover:scale-[1.02]"
+                  ? "bg-white/5 text-white/30 cursor-not-allowed border border-white/10"
+                  : "bg-[#1a73e8] text-white hover:bg-[#1a73e8]/90 shadow-blue-500/30 hover:scale-[1.02]"
             )}
           >
-            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : isRecording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : isRecording ? <Square className="w-5 h-5 shadow-inner" /> : <Mic className="w-5 h-5" />}
             {isProcessing ? "Polishing..." : isRecording ? "Stop Flow" : "Start Flow"}
           </button>
         </div>

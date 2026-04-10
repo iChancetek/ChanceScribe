@@ -196,7 +196,7 @@ export default function Dashboard() {
                 "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200",
                 activeTab === tab.id
                   ? "bg-white/10 text-white border border-white/15 shadow-lg backdrop-blur-sm"
-                  : "text-white/50 hover:text-white/80 hover:bg-white/5"
+                  : "text-white/80 hover:text-white hover:bg-white/5"
               )}
             >
               <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? tab.color : "")} />
