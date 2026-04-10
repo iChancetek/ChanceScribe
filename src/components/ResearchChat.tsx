@@ -193,6 +193,7 @@ export function ResearchChat({ sources, tone, language }: ResearchChatProps) {
           >
             <Square className="w-4 h-4 fill-current" />
           </button>
+        ) : (
           <button
             onClick={handleSend}
             disabled={!input.trim() || sources.length === 0}
