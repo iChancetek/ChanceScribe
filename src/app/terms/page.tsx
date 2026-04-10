@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Book, CheckCircle, AlertTriangle, ShieldCheck, Scale, Globe } from "lucide-react";
+import { Book, CheckCircle, AlertTriangle, ShieldCheck, Scale, Globe, ArrowLeft } from "lucide-react";
 import { BrandIdentifier } from "@/components/BrandIdentifier";
 
 export default function TermsPage() {

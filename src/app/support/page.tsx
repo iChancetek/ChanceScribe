@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MessageSquare, Mail, HelpCircle, Sparkles, Headphones, Zap, ExternalLink } from "lucide-react";
+import { MessageSquare, Mail, HelpCircle, Sparkles, Headphones, Zap, ExternalLink, ArrowLeft } from "lucide-react";
 import { BrandIdentifier } from "@/components/BrandIdentifier";
 import { IChancellor } from "@/components/IChancellor";
 
