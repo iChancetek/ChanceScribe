@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, BookOpen, GraduationCap, LayoutGrid, Lightbulb, PenTool, MessageSquare } from "lucide-react";
+import { Send, Loader2, BookOpen, GraduationCap, LayoutGrid, Lightbulb, PenTool, MessageSquare, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Source } from "./SourceUploader";
 
@@ -30,13 +30,25 @@ export function ResearchChat({ sources, tone, language }: ResearchChatProps) {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const cancelStream = () => {
+    abortRef.current?.abort();
+    setIsStreaming(false);
+  };
+
   const processMode = async (mode: string, question?: string) => {
     if (sources.length === 0) return;
+
+    // Cancel any in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setIsStreaming(true);
 
     if (question) {
@@ -49,6 +61,7 @@ export function ResearchChat({ sources, tone, language }: ResearchChatProps) {
       const res = await fetch("/api/sources/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           sources: sources.map((s) => ({ id: s.id, title: s.title, text: s.text })),
           mode,
@@ -78,9 +91,10 @@ export function ResearchChat({ sources, tone, language }: ResearchChatProps) {
           return updated;
         });
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === "AbortError") return; // Silent cancel
       console.error("Research chat error:", err);
-      setMessages((prev) => [...prev, { role: "assistant", content: "Failed to process sources." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "Failed to process sources. Please try again." }]);
     }
     setIsStreaming(false);
   };
@@ -116,6 +130,16 @@ export function ResearchChat({ sources, tone, language }: ResearchChatProps) {
             {mode.label}
           </button>
         ))}
+        {/* Stop button during streaming */}
+        {isStreaming && (
+          <button
+            onClick={cancelStream}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border border-red-400/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
+          >
+            <Square className="w-3 h-3 fill-current" />
+            Stop
+          </button>
+        )}
       </div>
 
       {/* Chat messages */}
@@ -136,7 +160,7 @@ export function ResearchChat({ sources, tone, language }: ResearchChatProps) {
               className={cn(
                 "max-w-[85%] rounded-2xl px-5 py-3 text-sm leading-relaxed",
                   msg.role === "user"
-                    ? "bg-primary text-white"
+                    ? "bg-[#1a73e8] text-white"
                     : "bg-white/10 text-white/90 border border-white/10"
               )}
             >
@@ -161,13 +185,23 @@ export function ResearchChat({ sources, tone, language }: ResearchChatProps) {
           disabled={isStreaming || sources.length === 0}
           className="flex-1 px-5 py-3 bg-white border border-black/5 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent/20 placeholder:text-foreground/30 disabled:opacity-50"
         />
-        <button
-          onClick={handleSend}
-          disabled={isStreaming || !input.trim() || sources.length === 0}
-          className="px-5 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        </button>
+        {isStreaming ? (
+          <button
+            onClick={cancelStream}
+            className="px-5 py-3 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 transition-colors border border-red-500/25"
+            title="Stop"
+          >
+            <Square className="w-4 h-4 fill-current" />
+          </button>
+        ) : (
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || sources.length === 0}
+            className="px-5 py-3 bg-[#1a73e8] text-white rounded-xl hover:bg-[#1a73e8]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );

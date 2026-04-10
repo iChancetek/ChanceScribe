@@ -6,13 +6,13 @@ export const dynamic = "force-dynamic";
 
 const SYSTEM_PROMPTS: Record<string, string> = {
   flashcards: `You are an expert educator. Given the source material, generate 8-12 high-quality flashcards.
-Return ONLY a valid JSON array. Format:
-[{"question": "...", "answer": "..."}]
+Return ONLY a valid JSON object. Format:
+{"flashcards": [{"question": "...", "answer": "..."}]}
 Cover key concepts, terms, and facts. Make questions specific and answers concise.`,
 
   quiz: `You are an exam designer. Given the source material, generate 6-8 multiple choice questions.
-Return ONLY a valid JSON array. Format:
-[{"question": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct": "A) ..."}]
+Return ONLY a valid JSON object. Format:
+{"questions": [{"question": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct": "A) ..."}]}
 Make questions test real comprehension, not just trivia.`,
 
   mindmap: `You are a knowledge architect. Given the source material, generate a hierarchical mind map.
@@ -124,7 +124,12 @@ export async function POST(req: NextRequest) {
     });
 
     return new Response(readable, {
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
+      headers: {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+      },
     });
   } catch (err: any) {
     console.error("Studio generation error:", err);

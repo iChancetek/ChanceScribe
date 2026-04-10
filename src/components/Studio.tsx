@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   Headphones, CreditCard, HelpCircle, GitBranch, FileText,
   Layout, Table2, BarChart3, Video, Loader2, Send,
-  Download, RefreshCw, ChevronRight, Sparkles, Play, Pause, X
+  Download, RefreshCw, ChevronRight, Sparkles, Play, Pause, X, Square
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Source } from "./SourceUploader";
@@ -55,11 +55,10 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
   const [quizSelected, setQuizSelected] = useState<Record<number, string>>({});
   const [quizRevealed, setQuizRevealed] = useState(false);
   const [flippedCard, setFlippedCard] = useState<number | null>(null);
-  const [question, setQuestion] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    // Reset output on mode change
     setStreamText("");
     setJsonData(null);
     setError("");
@@ -75,12 +74,22 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
     }
   }, [streamText, jsonData]);
 
+  const cancelGeneration = () => {
+    abortRef.current?.abort();
+    setIsGenerating(false);
+  };
+
   const generate = async (overrideMode?: string) => {
     const mode = overrideMode || activeMode;
     if (!sources.length || isGenerating) return;
 
     if (mode === "audio") { onNavigateToDeepDive?.(); return; }
     if (mode === "video") return;
+
+    // Cancel any in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     setIsGenerating(true);
     setStreamText("");
@@ -93,16 +102,19 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
       const res = await fetch("/api/studio/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           sources: sources.map(s => ({ title: s.title, text: s.text })),
           mode,
           tone,
           language,
-          question: question || undefined,
         }),
       });
 
-      if (!res.ok) throw new Error("Generation failed");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Generation failed");
+      }
 
       if (streamingModes.includes(mode)) {
         const reader = res.body!.getReader();
@@ -119,7 +131,8 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
         setJsonData(data.data);
       }
     } catch (err: any) {
-      setError("Failed to generate. Please try again.");
+      if (err.name === "AbortError") return; // User cancelled — silent
+      setError(err.message || "Failed to generate. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -136,9 +149,17 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
   const currentMode = MODES.find(m => m.id === activeMode)!;
   const hasOutput = streamText || jsonData;
 
+  // Resolve flashcards & quiz from either array or wrapped object
+  const flashcards: Flashcard[] = jsonData
+    ? (Array.isArray(jsonData) ? jsonData : jsonData.flashcards || [])
+    : [];
+  const quizQuestions: QuizQuestion[] = jsonData
+    ? (Array.isArray(jsonData) ? jsonData : jsonData.questions || jsonData.quiz || [])
+    : [];
+
   return (
     <div className="space-y-6">
-      {/* Mode Selector — horizontally scrollable */}
+      {/* Mode Selector */}
       <div className="relative">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
           {MODES.map(mode => (
@@ -179,7 +200,17 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {hasOutput && (
+            {isGenerating && (
+              <button
+                onClick={cancelGeneration}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold border border-red-500/30 transition-colors"
+                title="Stop generation"
+              >
+                <Square className="w-3 h-3 fill-current" />
+                Stop
+              </button>
+            )}
+            {hasOutput && !isGenerating && (
               <button
                 onClick={() => generate()}
                 className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors"
@@ -188,9 +219,9 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
                 <RefreshCw className="w-4 h-4" />
               </button>
             )}
-            {streamText && (
+            {streamText && !isGenerating && (
               <button
-                onClick={() => downloadText(streamText, `chancescribe-${activeMode}.md`)}
+                onClick={() => downloadText(streamText, `workspaceiq-${activeMode}.md`)}
                 className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors"
                 title="Download"
               >
@@ -231,13 +262,25 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
             </div>
           )}
 
-          {/* Generating */}
+          {/* Generating state */}
           {isGenerating && (
-            <div className="flex flex-col items-center justify-center gap-3 py-12">
-              <Loader2 className={cn("w-8 h-8 animate-spin", currentMode.color)} />
-              <p className="text-sm text-white/50">Generating {currentMode.label}...</p>
+            <div className="flex flex-col items-center justify-center gap-4 py-12">
+              <div className="relative">
+                <Loader2 className={cn("w-8 h-8 animate-spin", currentMode.color)} />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-white/70">Generating {currentMode.label}...</p>
+                <p className="text-xs text-white/40 mt-1">This may take a moment</p>
+              </div>
+              <button
+                onClick={cancelGeneration}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-400 text-xs font-bold border border-red-500/25 transition-all"
+              >
+                <Square className="w-3 h-3 fill-current" />
+                Cancel Generation
+              </button>
               {streamText && (
-                <div className="w-full mt-4 text-sm text-white/70 whitespace-pre-wrap font-mono max-h-48 overflow-y-auto leading-relaxed">
+                <div className="w-full mt-2 text-sm text-white/70 whitespace-pre-wrap font-mono max-h-48 overflow-y-auto leading-relaxed">
                   {streamText}
                 </div>
               )}
@@ -254,7 +297,9 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
           {/* Flashcards */}
           {!isGenerating && activeMode === "flashcards" && jsonData && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {(Array.isArray(jsonData) ? jsonData : jsonData.flashcards || []).map((card: Flashcard, i: number) => (
+              {flashcards.length === 0 ? (
+                <p className="text-sm text-white/50 col-span-2 text-center py-8">No flashcards were generated. Try again.</p>
+              ) : flashcards.map((card: Flashcard, i: number) => (
                 <div
                   key={i}
                   onClick={() => setFlippedCard(flippedCard === i ? null : i)}
@@ -280,7 +325,9 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
           {/* Quiz */}
           {!isGenerating && activeMode === "quiz" && jsonData && (
             <div className="space-y-5">
-              {(Array.isArray(jsonData) ? jsonData : jsonData.questions || jsonData.quiz || []).map((q: QuizQuestion, qi: number) => (
+              {quizQuestions.length === 0 ? (
+                <p className="text-sm text-white/50 text-center py-8">No quiz questions were generated. Try again.</p>
+              ) : quizQuestions.map((q: QuizQuestion, qi: number) => (
                 <div key={qi} className="space-y-2">
                   <p className="text-sm font-bold text-white">{qi + 1}. {q.question}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -307,7 +354,7 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
                   </div>
                 </div>
               ))}
-              {!quizRevealed && Object.keys(quizSelected).length > 0 && (
+              {quizQuestions.length > 0 && !quizRevealed && Object.keys(quizSelected).length > 0 && (
                 <button
                   onClick={() => setQuizRevealed(true)}
                   className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-sm font-bold text-white border border-white/15 transition-all"
@@ -393,11 +440,19 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
             </div>
           )}
 
+          {/* Error */}
+          {error && (
+            <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 px-4 py-3 rounded-xl">
+              <X className="w-4 h-4 shrink-0" />
+              {error}
+            </div>
+          )}
+
           <div ref={bottomRef} />
         </div>
       </div>
 
-      {/* Generate button when output exists */}
+      {/* Regenerate button when output exists */}
       {hasOutput && !isGenerating && (
         <div className="flex justify-center">
           <button

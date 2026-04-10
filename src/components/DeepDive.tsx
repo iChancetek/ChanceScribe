@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2, Play, Pause, Download, Headphones } from "lucide-react";
+import { useState, useRef } from "react";
+import { Loader2, Play, Pause, Download, Headphones, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Source } from "./SourceUploader";
 
@@ -17,9 +17,20 @@ export function DeepDive({ sources, language, onTranscriptGenerated }: DeepDiveP
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioEl, setAudioEl] = useState<HTMLAudioElement | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const cancelGeneration = () => {
+    abortRef.current?.abort();
+    setIsGenerating(false);
+  };
 
   const generateDeepDive = async () => {
     if (sources.length === 0) return;
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setIsGenerating(true);
     setAudioUrl(null);
 
@@ -27,6 +38,7 @@ export function DeepDive({ sources, language, onTranscriptGenerated }: DeepDiveP
       const res = await fetch("/api/deepdive/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           sources: sources.map((s) => ({ title: s.title, text: s.text })),
           language,
@@ -44,7 +56,8 @@ export function DeepDive({ sources, language, onTranscriptGenerated }: DeepDiveP
       if (encodedTranscript && onTranscriptGenerated) {
         onTranscriptGenerated(decodeURIComponent(encodedTranscript));
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === "AbortError") return; // Silent cancel
       console.error("Deep Dive error:", err);
     }
     setIsGenerating(false);
@@ -70,7 +83,7 @@ export function DeepDive({ sources, language, onTranscriptGenerated }: DeepDiveP
     const url = URL.createObjectURL(audioBlob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "chancescribe-deep-dive.mp3";
+    a.download = "workspaceiq-deep-dive.mp3";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -95,26 +108,39 @@ export function DeepDive({ sources, language, onTranscriptGenerated }: DeepDiveP
             Upload sources in the Research tab first
           </p>
         ) : !audioUrl ? (
-          <button
-            onClick={generateDeepDive}
-            disabled={isGenerating}
-            className={cn(
-              "px-8 py-4 bg-primary text-white rounded-full font-semibold text-base transition-all shadow-lg shadow-black/10",
-              isGenerating ? "animate-pulse cursor-wait" : "hover:scale-[1.02] hover:bg-primary/90"
+          <div className="flex flex-col items-center gap-4">
+            <button
+              onClick={generateDeepDive}
+              disabled={isGenerating}
+              className={cn(
+                "px-8 py-4 bg-primary text-white rounded-full font-semibold text-base transition-all shadow-lg shadow-black/10",
+                isGenerating ? "animate-pulse cursor-wait" : "hover:scale-[1.02] hover:bg-primary/90"
+              )}
+            >
+              {isGenerating ? (
+                <span className="flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Generating Discussion...
+                </span>
+              ) : (
+                <span className="flex items-center gap-3">
+                  <Headphones className="w-5 h-5" />
+                  Generate Deep Dive
+                </span>
+              )}
+            </button>
+
+            {/* Cancel button during generation */}
+            {isGenerating && (
+              <button
+                onClick={cancelGeneration}
+                className="flex items-center gap-2 px-5 py-2 rounded-full bg-red-500/15 hover:bg-red-500/25 text-red-400 text-sm font-bold border border-red-500/25 transition-all"
+              >
+                <Square className="w-3.5 h-3.5 fill-current" />
+                Cancel
+              </button>
             )}
-          >
-            {isGenerating ? (
-              <span className="flex items-center gap-3">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Generating Discussion...
-              </span>
-            ) : (
-              <span className="flex items-center gap-3">
-                <Headphones className="w-5 h-5" />
-                Generate Deep Dive
-              </span>
-            )}
-          </button>
+          </div>
         ) : (
           <div className="space-y-6">
             {/* Player */}
