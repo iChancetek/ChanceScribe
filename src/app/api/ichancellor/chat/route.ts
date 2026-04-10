@@ -8,16 +8,22 @@ export const dynamic = "force-dynamic";
 const ICHANCELLOR_SYSTEM = `You are iChancellor — WorkspaceIQ's intelligent, conversational AI assistant.
 You are warm, sharp, and concise. You help users understand WorkspaceIQ's features and answer their questions.
 
-PERSONALITY:
-- Friendly but professional. Think of a brilliant advisor who never wastes words.
-- Use the provided CONTEXT to ground every answer. If context is empty, answer from general knowledge.
-- Always cite what you know. If unsure, say so honestly.
+PERSONALITY & TONE:
+- Maintain an extremely professional, neat, and executive tone.
+- Think of a brilliant advisor who speaks with precision and clarity.
+- Use the provided CONTEXT to ground every answer.
+
+FORMATTING RULES (CRITICAL):
+1. NO ASTERISKS: Do not use the asterisk character (*) for any reason. No bolding (**), no italics (*), and no asterisk-based bullets.
+2. PARAGRAPHS: Use clear, well-spaced paragraphs for explanations.
+3. BULLET POINTS: When listing items, use dashes (-) instead of asterisks. High-density information should be organized into neat lists.
+4. CITATION: Cite facts from the context clearly but without using special markdown symbols that rely on asterisks.
 
 CONTEXT FROM KNOWLEDGE BASE:
 {CONTEXT}
 
 RULES:
-- Keep responses concise (2-4 sentences unless detail is needed).
+- Keep responses concise but comprehensive where needed.
 - Offer to elaborate if the user wants more.
 - Never fabricate statistics or facts.`;
 
@@ -31,17 +37,25 @@ export async function POST(req: NextRequest) {
 
     const latestQuery = query ?? messages[messages.length - 1]?.content ?? "";
 
-    // Step 1: Retrieve relevant context from Pinecone
+    // Step 1: Retrieve context with a HARD TIMEOUT
     let contextChunks: string[] = [];
     try {
-      contextChunks = await queryKnowledgeBase(latestQuery, 5);
-    } catch (err) {
-      console.warn("Pinecone query failed, proceeding without context:", err);
+      console.log("[iChancellor] Fetching context for:", latestQuery.slice(0, 50) + "...");
+      
+      const ragPromise = queryKnowledgeBase(latestQuery, 5);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("RAG Timeout")), 5000)
+      );
+
+      contextChunks = await Promise.race([ragPromise, timeoutPromise]) as string[];
+      console.log(`[iChancellor] RAG search returned ${contextChunks.length} chunks.`);
+    } catch (err: any) {
+      console.warn("[iChancellor] RAG failed or timed out. Falling back to base knowledge:", err.message);
     }
 
     const context = contextChunks.length > 0
       ? contextChunks.join("\n\n---\n\n")
-      : "No specific context found. Answer from general knowledge about WorkspaceIQ.";
+      : "No specific context found. Answer from general knowledge about WorkspaceIQ platform.";
 
     const systemPrompt = ICHANCELLOR_SYSTEM.replace("{CONTEXT}", context);
 
@@ -51,7 +65,8 @@ export async function POST(req: NextRequest) {
       content: m.content,
     }));
 
-    // Step 3: Generate response with GPT-5.4 streaming
+    // Step 3: Generate response with GPT-5.4
+    console.log("[iChancellor] Requesting completion from GPT-5.4...");
     const completion = await openai.chat.completions.create({
       model: "gpt-5.4",
       max_completion_tokens: 600,
@@ -66,14 +81,20 @@ export async function POST(req: NextRequest) {
     // Stream back to client
     const stream = new ReadableStream({
       async start(controller) {
-        for await (const chunk of completion) {
-          const text = chunk.choices[0]?.delta?.content ?? "";
-          if (text) controller.enqueue(new TextEncoder().encode(text));
+        try {
+          for await (const chunk of completion) {
+            const text = chunk.choices[0]?.delta?.content ?? "";
+            if (text) controller.enqueue(new TextEncoder().encode(text));
+          }
+        } catch (err) {
+          console.error("[iChancellor] Streaming error:", err);
+        } finally {
+          controller.close();
         }
-        controller.close();
       },
     });
 
+    console.log("[iChancellor] Streaming response started.");
     return new Response(stream, {
       headers: {
         "Content-Type": "text/event-stream",
@@ -81,7 +102,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err: any) {
-    console.error("iChancellor error:", err);
+    console.error("iChancellor catch-all:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

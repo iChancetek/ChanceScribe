@@ -20,7 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FileText, StickyNote } from "lucide-react";
-import { BrandLogo } from "@/components/BrandLogo";
+import { BrandIdentifier } from "@/components/BrandIdentifier";
 
 const FEATURE_CARDS = [
   {
@@ -160,10 +160,7 @@ export default function Dashboard() {
 
         {/* Header */}
         <header className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-            <BrandLogo size={28} />
-            <span className="text-base font-semibold tracking-tight text-white">WorkspaceIQ</span>
-          </Link>
+          <BrandIdentifier size={28} />
           <div className="flex items-center gap-3">
             <span className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-blue-400/80 bg-blue-400/10 border border-blue-400/20 px-3 py-1.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
@@ -364,6 +361,16 @@ export default function Dashboard() {
             <LibraryView onRestoreProject={handleRestoreProject} />
           </section>
         )}
+
+        {/* Footer */}
+        <footer className="pt-12 pb-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-white/20">© {new Date().getFullYear()} WorkspaceIQ | Chancellor Minus</p>
+          <div className="flex items-center gap-6">
+            <Link href="/privacy" className="text-[10px] uppercase tracking-widest font-bold text-white/20 hover:text-white/60 transition-colors">Privacy</Link>
+            <Link href="/terms" className="text-[10px] uppercase tracking-widest font-bold text-white/20 hover:text-white/60 transition-colors">Terms</Link>
+            <Link href="/support" className="text-[10px] uppercase tracking-widest font-bold text-white/20 hover:text-white/60 transition-colors">Support</Link>
+          </div>
+        </footer>
 
       </div>
     </main>

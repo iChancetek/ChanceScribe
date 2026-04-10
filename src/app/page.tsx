@@ -1,5 +1,11 @@
+"use client";
+
+import Link from "next/link";
+import { Mic, BookOpen, Headphones, ArrowRight, Globe, Sparkles, Shield } from "lucide-react";
 import { IChancellor } from '@/components/IChancellor';
 import { BrandLogo } from '@/components/BrandLogo';
+import { BrandIdentifier } from '@/components/BrandIdentifier';
+import { useAuth } from '@/context/AuthContext';
 
 const features = [
   {
@@ -35,6 +41,8 @@ const capabilities = [
 ];
 
 export default function Home() {
+  const { user } = useAuth();
+
   return (
     <div className="relative min-h-screen bg-[#050508] text-white overflow-x-hidden">
 
@@ -64,16 +72,13 @@ export default function Home() {
 
       {/* ── Nav ── */}
       <nav className="relative z-10 flex items-center justify-between max-w-6xl mx-auto px-8 py-6">
-        <div className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-          <BrandLogo size={32} />
-          <span className="text-lg font-semibold tracking-tight text-white">WorkspaceIQ</span>
-        </div>
+        <BrandIdentifier size={32} />
         <div className="flex items-center gap-4">
           <Link
-            href="/login"
+            href={user ? "/dashboard" : "/login"}
             className="px-5 py-2 bg-white/10 hover:bg-white/15 text-white text-sm font-medium rounded-full border border-white/10 transition-all duration-200 backdrop-blur-sm"
           >
-            Sign in
+            {user ? "Open Workspace" : "Sign in"}
           </Link>
         </div>
       </nav>
@@ -194,11 +199,9 @@ export default function Home() {
           <span className="text-sm text-white/30 font-medium">© {new Date().getFullYear()} | WorkspaceIQ | Chancellor Minus | ChanceTEK LLC. All rights reserved.</span>
         </div>
         <div className="flex items-center gap-6">
-          {['Privacy', 'Terms', 'Support'].map((item) => (
-            <a key={item} href="#" className="text-xs text-white/25 hover:text-white/60 transition-colors">
-              {item}
-            </a>
-          ))}
+          <Link href="/privacy" className="text-xs text-white/25 hover:text-white/60 transition-colors">Privacy</Link>
+          <Link href="/terms" className="text-xs text-white/25 hover:text-white/60 transition-colors">Terms</Link>
+          <Link href="/support" className="text-xs text-white/25 hover:text-white/60 transition-colors">Support</Link>
         </div>
       </footer>
 

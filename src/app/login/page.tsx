@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ArrowRight, Loader2, Mail, Eye, EyeOff, Sparkles, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { BrandLogo } from "@/components/BrandLogo";
+import { BrandIdentifier } from "@/components/BrandIdentifier";
 
 type Mode = "signin" | "signup" | "reset";
 
@@ -94,10 +94,7 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md">
         {/* Brand mark */}
         <div className="flex flex-col items-center mb-8">
-          <Link href="/" className="group flex items-center gap-2.5 mb-6 hover:opacity-80 transition-opacity">
-            <BrandLogo size={40} className="shadow-2xl shadow-blue-500/20" />
-            <span className="text-xl font-semibold tracking-tight">WorkspaceIQ</span>
-          </Link>
+          <BrandIdentifier size={40} className="mb-6 shadow-2xl shadow-blue-500/20" />
           <h1 className="text-3xl font-bold tracking-tight text-white text-center">{titles[mode]}</h1>
           <p className="text-white/40 text-sm mt-2 text-center">{subtitles[mode]}</p>
         </div>

@@ -15,22 +15,28 @@ function getPineconeClient() {
 
 export function getPineconeIndex() {
   const client = getPineconeClient();
-  if (!process.env.PINECONE_INDEX_HOST) {
-    throw new Error("PINECONE_INDEX_HOST is not set");
-  }
-  return client.index("chancescribe", process.env.PINECONE_INDEX_HOST);
+  // In SDK v7, index() usually just takes the name. Host is resolved automatically.
+  return client.index("chancescribe");
 }
 
-/** Embed a piece of text using text-embedding-3-small (1536 dims) */
+/** 
+ * Embed a piece of text using text-embedding-3-small (1536 dims)
+ */
 export async function embedText(text: string): Promise<number[]> {
-  const res = await openai.embeddings.create({
-    model: "text-embedding-3-small",
-    input: text.slice(0, 8191),
-  });
-  return res.data[0].embedding;
+  try {
+    const res = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input: text.slice(0, 8191),
+    }, { timeout: 10000 }); // Use OpenAI's internal timeout
+    
+    return res.data[0].embedding;
+  } catch (err: any) {
+    console.error("[RAG] Embedding error:", err.message);
+    throw err;
+  }
 }
 
-/** Split a large text into overlapping chunks for quality RAG retrieval */
+/** Split a large text into overlapping chunks */
 export function chunkText(text: string, chunkSize = 500, overlap = 80): string[] {
   const words = text.split(/\s+/);
   const chunks: string[] = [];
@@ -43,33 +49,64 @@ export function chunkText(text: string, chunkSize = 500, overlap = 80): string[]
   return chunks;
 }
 
-/** Embed a query and search Pinecone for top-k matching chunks */
+/** 
+ * Embed a query and search Pinecone for top-k matching chunks.
+ */
 export async function queryKnowledgeBase(query: string, topK = 5): Promise<string[]> {
   const embedding = await embedText(query);
+  
   const results = await getPineconeIndex().query({
     vector: embedding,
     topK,
     includeMetadata: true,
   });
+
   return results.matches
-    .filter((m) => (m.score ?? 0) > 0.3)
-    .map((m) => (m.metadata?.text as string) ?? "");
+    .filter((m: any) => (m.score ?? 0) > 0.3)
+    .map((m: any) => (m.metadata?.text as string) ?? "");
 }
 
-/** Ingest and upsert a document into Pinecone */
+/** 
+ * Ingest and upsert a document into Pinecone.
+ */
 export async function ingestDocument(
   text: string,
   metadata: Record<string, string>
 ): Promise<number> {
   const chunks = chunkText(text);
-  const vectors = await Promise.all(
-    chunks.map(async (chunk, i) => ({
-      id: `${metadata.source ?? "doc"}-${Date.now()}-${i}`,
-      values: await embedText(chunk),
-      metadata: { ...metadata, text: chunk },
-    }))
-  );
-  // Pinecone SDK v4: upsert accepts { records: [...] }
-  await (getPineconeIndex() as any).upsert(vectors);
+  const vectors = [];
+
+  for (let i = 0; i < chunks.length; i++) {
+    try {
+      const embedding = await embedText(chunks[i]);
+      vectors.push({
+        id: `${metadata.source ?? "doc"}-${Date.now()}-${i}`,
+        values: embedding,
+        metadata: { ...metadata, text: chunks[i] },
+      });
+    } catch (err: any) {
+      console.error(`[RAG] Failed chunk ${i}:`, err.message);
+    }
+  }
+
+  console.log(`[RAG] Embedding complete. Total vectors: ${vectors.length}`);
+
+  if (vectors.length > 0) {
+    const batchSize = 100;
+    for (let i = 0; i < vectors.length; i += batchSize) {
+      const batch = vectors.slice(i, i + batchSize);
+      console.log(`[RAG] Upserting batch size ${batch.length}. First ID: ${batch[0].id}`);
+      
+      try {
+        // Pinecone SDK v7+ should accept the array directly
+        await getPineconeIndex().upsert(batch as any);
+      } catch (upsertErr: any) {
+        console.warn("[RAG] Direct array upsert failed, trying wrapped:", upsertErr.message);
+        // Fallback for some SDK configurations
+        await (getPineconeIndex() as any).upsert({ records: batch });
+      }
+    }
+  }
+
   return vectors.length;
 }
