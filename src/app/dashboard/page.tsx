@@ -13,7 +13,6 @@ import { ResearchChat } from "@/components/ResearchChat";
 import { Studio } from "@/components/Studio";
 import { DataDashboard } from "@/components/DataDashboard";
 import { DeepDive } from "@/components/DeepDive";
-import { ResearchChat } from "@/components/ResearchChat";
 import { ToneSelector } from "@/components/ToneSelector";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { AuthGuard } from "@/components/AuthGuard";
