@@ -55,7 +55,7 @@ const TYPE_LABELS: Record<ItemType, string> = {
 // ─── Item Card ────────────────────────────────────────────────────────────────
 
 function ItemCard({
-  item, onDelete, onRecover, onUpdate, isTrash = false
+  item, onDelete, onRecover, onUpdate, onRestore, isTrash = false
 }: {
   item: SavedItem;
   onDelete: (id: string) => void;
