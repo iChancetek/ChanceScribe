@@ -6,11 +6,11 @@ import { cn } from "@/lib/utils";
 import { Source } from "./SourceUploader";
 
 const MODES = [
-  { id: "summarize", label: "Summarize", icon: BookOpen, color: "text-blue-500" },
-  { id: "study", label: "Study", icon: GraduationCap, color: "text-green-500" },
-  { id: "organize", label: "Organize", icon: LayoutGrid, color: "text-purple-500" },
-  { id: "create", label: "Create", icon: Lightbulb, color: "text-yellow-500" },
-  { id: "rewrite", label: "Rewrite", icon: PenTool, color: "text-orange-500" },
+  { id: "summarize", label: "Summarize", icon: BookOpen, color: "text-blue-400" },
+  { id: "study", label: "Study", icon: GraduationCap, color: "text-emerald-400" },
+  { id: "organize", label: "Organize", icon: LayoutGrid, color: "text-violet-400" },
+  { id: "create", label: "Create", icon: Lightbulb, color: "text-amber-400" },
+  { id: "rewrite", label: "Rewrite", icon: PenTool, color: "text-orange-400" },
 ];
 
 interface ResearchChatProps {
@@ -121,8 +121,8 @@ export function ResearchChat({ sources, tone, language }: ResearchChatProps) {
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border",
               activeMode === mode.id
-                ? "bg-white border-black/10 shadow-sm"
-                : "border-transparent hover:bg-secondary/50 text-foreground/50",
+                ? "bg-white/10 border-white/20 text-white shadow-sm"
+                : "border-transparent hover:bg-white/5 text-white/50",
               (isStreaming || sources.length === 0) && "opacity-40 cursor-not-allowed"
             )}
           >
@@ -146,10 +146,10 @@ export function ResearchChat({ sources, tone, language }: ResearchChatProps) {
       <div className="writing-pad !p-6 min-h-[300px] max-h-[500px] overflow-y-auto space-y-6">
         {messages.length === 0 && (
           <div className="h-[250px] flex flex-col items-center justify-center text-center space-y-3">
-            <MessageSquare className="w-10 h-10 text-foreground/15" />
+            <MessageSquare className="w-10 h-10 text-white/20" />
             <div>
-              <h4 className="text-sm font-bold text-foreground/40">Upload sources, then ask anything</h4>
-              <p className="text-xs text-foreground/30 mt-1">Or click a mode above to auto-analyze your documents.</p>
+              <h4 className="text-sm font-bold text-white/50">Upload sources, then ask anything</h4>
+              <p className="text-xs text-white/30 mt-1">Or click a mode above to auto-analyze your documents.</p>
             </div>
           </div>
         )}
@@ -160,13 +160,13 @@ export function ResearchChat({ sources, tone, language }: ResearchChatProps) {
               className={cn(
                 "max-w-[85%] rounded-2xl px-5 py-3 text-sm leading-relaxed",
                   msg.role === "user"
-                    ? "bg-[#1a73e8] text-white"
+                    ? "bg-violet-500/20 text-violet-100 border border-violet-500/30"
                     : "bg-white/10 text-white/90 border border-white/10"
               )}
             >
-              <div className="whitespace-pre-wrap font-serif">{msg.content}</div>
+              <div className="whitespace-pre-wrap">{msg.content}</div>
               {msg.role === "assistant" && isStreaming && i === messages.length - 1 && (
-                <span className="inline-block w-1.5 h-4 ml-1 bg-accent/40 animate-pulse rounded-full align-middle" />
+                <span className="inline-block w-1.5 h-4 ml-1 bg-white/40 animate-pulse rounded-full align-middle" />
               )}
             </div>
           </div>
@@ -183,7 +183,7 @@ export function ResearchChat({ sources, tone, language }: ResearchChatProps) {
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder={sources.length === 0 ? "Add sources first..." : "Ask a question about your sources..."}
           disabled={isStreaming || sources.length === 0}
-          className="flex-1 px-5 py-3 bg-white border border-black/5 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent/20 placeholder:text-foreground/30 disabled:opacity-50"
+          className="flex-1 px-5 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium text-white focus:outline-none focus:border-violet-400/50 focus:bg-white/10 placeholder:text-white/30 disabled:opacity-50 transition-all z-10"
         />
         {isStreaming ? (
           <button
@@ -193,11 +193,10 @@ export function ResearchChat({ sources, tone, language }: ResearchChatProps) {
           >
             <Square className="w-4 h-4 fill-current" />
           </button>
-        ) : (
           <button
             onClick={handleSend}
             disabled={!input.trim() || sources.length === 0}
-            className="px-5 py-3 bg-[#1a73e8] text-white rounded-xl hover:bg-[#1a73e8]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-5 py-3 bg-violet-500/20 text-violet-400 border border-violet-500/30 rounded-xl hover:bg-violet-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed z-10"
           >
             <Send className="w-4 h-4" />
           </button>
