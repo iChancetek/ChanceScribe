@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Shield, Lock, Eye, Globe, Database, Scale } from "lucide-react";
+import { Shield, Lock, Eye, Globe, Database, Scale, ArrowLeft } from "lucide-react";
 import { BrandIdentifier } from "@/components/BrandIdentifier";
 
 export default function PrivacyPage() {

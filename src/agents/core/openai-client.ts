@@ -1,8 +1,13 @@
 import OpenAI from "openai";
+import { wrapOpenAI } from "langsmith/wrappers";
 
-export const openai = new OpenAI({
+const rawOpenai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || process.env["OPENAI_API_KEY "] || "dummy_build_key",
 });
+
+export const openai = process.env.LANGSMITH_TRACING === "true" 
+  ? wrapOpenAI(rawOpenai) 
+  : rawOpenai;
 
 export interface GPT54Input {
   role: "system" | "user" | "assistant";
