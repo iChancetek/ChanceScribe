@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import {
   Mic, BookOpen, Headphones, LogOut, Library,
-  Music, Globe, ArrowRight, Download, FolderOpen
+  Music, Globe, ArrowRight, Download, FolderOpen,
+  Pencil, Trash2, Check, X, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StreamingAudioRecorder } from "@/components/StreamingAudioRecorder";
@@ -30,6 +31,7 @@ import {
   getWorkspaceName,
   createProject,
   updateProject,
+  softDeleteProject,
   ResearchProject,
 } from "@/lib/firebase/projects";
 
@@ -215,6 +217,35 @@ export default function Dashboard() {
       createdAt: new Date().toISOString(),
     });
     downloadFile(md, `${title.toLowerCase().replace(/\s+/g, "-")}.md`, "text/markdown");
+  };
+
+  // ── Project rename / delete state ─────────────────────────────────────────
+
+  const [isRenamingProject, setIsRenamingProject] = useState(false);
+  const [projectNameDraft, setProjectNameDraft] = useState("");
+  const [isRenamingSaving, setIsRenamingSaving] = useState(false);
+  const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
+
+  const handleRenameProject = async () => {
+    if (!user || !activeProjectId || !projectNameDraft.trim()) return;
+    setIsRenamingSaving(true);
+    await updateProject(user.uid, activeProjectId, { name: projectNameDraft.trim() });
+    setIsRenamingProject(false);
+    setIsRenamingSaving(false);
+  };
+
+  const handleDeleteActiveProject = async () => {
+    if (!user || !activeProjectId) return;
+    setIsDeletingProject(true);
+    await softDeleteProject(user.uid, activeProjectId);
+    setActiveProjectId(null);
+    setSources([]);
+    setCurrentStudioOutput(null);
+    setDeepDiveTranscript(null);
+    setSaveStatus("saved");
+    setConfirmDeleteProject(false);
+    setIsDeletingProject(false);
   };
 
   // ── Derived ────────────────────────────────────────────────────────────────
@@ -406,24 +437,107 @@ export default function Dashboard() {
                 {/* Main Research area */}
                 <div className="flex-1 min-w-0 space-y-6">
 
-                  {/* Active project status bar */}
+                  {/* Active project status bar — interactive rename + delete */}
                   <div className="flex items-center gap-3 px-4 py-3 bg-white/[0.03] border border-white/8 rounded-2xl">
                     <FolderOpen className="w-4 h-4 text-violet-400 shrink-0" />
+
+                    {/* Name / rename input */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white/70 truncate">
-                        {activeProject?.name ?? "No project active"}
-                      </p>
-                      <p className="text-[10px] text-white/25">
-                        {activeProject
-                          ? `${sources.length} source${sources.length !== 1 ? "s" : ""} · auto-saved to Library`
-                          : "Add a source below to automatically start a new project"}
-                      </p>
+                      {isRenamingProject && activeProject ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            autoFocus
+                            value={projectNameDraft}
+                            onChange={(e) => setProjectNameDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleRenameProject();
+                              if (e.key === "Escape") setIsRenamingProject(false);
+                            }}
+                            className="flex-1 min-w-0 bg-white/[0.06] border border-violet-500/30 rounded-lg px-3 py-1 text-sm font-semibold text-white focus:outline-none focus:border-violet-400/60"
+                          />
+                          <button
+                            onClick={handleRenameProject}
+                            disabled={isRenamingSaving}
+                            className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors shrink-0"
+                            title="Save name"
+                          >
+                            {isRenamingSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                          </button>
+                          <button
+                            onClick={() => setIsRenamingProject(false)}
+                            className="p-1.5 rounded-lg hover:bg-white/8 text-white/30 hover:text-white/60 transition-colors shrink-0"
+                            title="Cancel"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm font-semibold text-white/70 truncate">
+                            {activeProject?.name ?? "No project active"}
+                          </p>
+                          <p className="text-[10px] text-white/25">
+                            {activeProject
+                              ? `${sources.length} source${sources.length !== 1 ? "s" : ""} · auto-saved to Library`
+                              : "Add a source below to automatically start a new project"}
+                          </p>
+                        </>
+                      )}
                     </div>
-                    {saveStatus === "saving" && (
-                      <span className="text-[10px] text-amber-400 font-bold animate-pulse shrink-0">Saving…</span>
+
+                    {/* Save status */}
+                    {!isRenamingProject && !confirmDeleteProject && (
+                      <>
+                        {saveStatus === "saving" && (
+                          <span className="text-[10px] text-amber-400 font-bold animate-pulse shrink-0">Saving…</span>
+                        )}
+                        {saveStatus === "saved" && activeProjectId && (
+                          <span className="text-[10px] text-emerald-400/70 font-bold shrink-0">✓ Saved</span>
+                        )}
+                      </>
                     )}
-                    {saveStatus === "saved" && activeProjectId && (
-                      <span className="text-[10px] text-emerald-400/70 font-bold shrink-0">✓ Saved</span>
+
+                    {/* Action buttons — always visible when a project is active */}
+                    {activeProject && !isRenamingProject && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        {confirmDeleteProject ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-red-400/80 font-medium whitespace-nowrap">Delete project?</span>
+                            <button
+                              onClick={handleDeleteActiveProject}
+                              disabled={isDeletingProject}
+                              className="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-400 text-[10px] font-bold hover:bg-red-500/30 transition-colors"
+                            >
+                              {isDeletingProject ? <Loader2 className="w-3 h-3 animate-spin" /> : "Yes"}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteProject(false)}
+                              className="px-2.5 py-1 rounded-lg hover:bg-white/8 text-white/40 text-[10px] font-bold transition-colors"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => { setProjectNameDraft(activeProject.name); setIsRenamingProject(true); }}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/70 transition-all text-[10px] font-semibold border border-white/8"
+                              title="Rename project"
+                            >
+                              <Pencil className="w-3 h-3" />
+                              Rename
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteProject(true)}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-500/5 hover:bg-red-500/15 text-white/30 hover:text-red-400 transition-all text-[10px] font-semibold border border-white/8 hover:border-red-500/20"
+                              title="Delete project"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
                     )}
                   </div>
 
