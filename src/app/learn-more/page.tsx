@@ -244,7 +244,7 @@ export default function LearnMorePage() {
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/5 max-w-6xl mx-auto px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <span className="text-sm text-white/25">WorkspaceIQ © 2026</span>
+        <span className="text-sm text-white/25">© {new Date().getFullYear()} | WorkspaceIQ | Chancellor Minus | ChanceTEK LLC. All rights reserved.</span>
         <div className="flex gap-6">
           {["Privacy", "Terms", "Support"].map(item => (
             <a key={item} href="#" className="text-xs text-white/20 hover:text-white/50 transition-colors">{item}</a>

@@ -1,6 +1,5 @@
-import Link from 'next/link';
-import { ArrowRight, Mic, BookOpen, Headphones, Sparkles, Globe, Shield } from 'lucide-react';
 import { IChancellor } from '@/components/IChancellor';
+import { BrandLogo } from '@/components/BrandLogo';
 
 const features = [
   {
@@ -65,10 +64,8 @@ export default function Home() {
 
       {/* ── Nav ── */}
       <nav className="relative z-10 flex items-center justify-between max-w-6xl mx-auto px-8 py-6">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 via-violet-400 to-emerald-400 flex items-center justify-center shadow-lg shadow-blue-500/30">
-            <Mic className="w-4 h-4 text-white" />
-          </div>
+        <div className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+          <BrandLogo size={32} />
           <span className="text-lg font-semibold tracking-tight text-white">WorkspaceIQ</span>
         </div>
         <div className="flex items-center gap-4">
@@ -84,11 +81,9 @@ export default function Home() {
       {/* ── Hero ── */}
       <section className="relative z-10 flex flex-col items-center text-center max-w-5xl mx-auto px-8 pt-20 pb-32">
 
-        {/* Transparent star logo */}
+        {/* Brilliant Diamond Logo */}
         <div className="relative mb-10">
-          <div className="w-24 h-24 rounded-3xl border border-white/20 bg-transparent flex items-center justify-center mx-auto">
-            <Sparkles className="w-10 h-10 text-white" />
-          </div>
+          <BrandLogo size={96} className="mx-auto" />
         </div>
 
         <p className="text-sm font-semibold tracking-[0.2em] uppercase text-blue-400 mb-5">
@@ -196,7 +191,7 @@ export default function Home() {
       <footer className="relative z-10 border-t border-white/6 max-w-6xl mx-auto px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 via-violet-400 to-emerald-400" />
-          <span className="text-sm text-white/30 font-medium">WorkspaceIQ © 2026</span>
+          <span className="text-sm text-white/30 font-medium">© {new Date().getFullYear()} | WorkspaceIQ | Chancellor Minus | ChanceTEK LLC. All rights reserved.</span>
         </div>
         <div className="flex items-center gap-6">
           {['Privacy', 'Terms', 'Support'].map((item) => (
