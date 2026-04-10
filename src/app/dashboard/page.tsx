@@ -13,6 +13,7 @@ import { ResearchChat } from "@/components/ResearchChat";
 import { Studio } from "@/components/Studio";
 import { DataDashboard } from "@/components/DataDashboard";
 import { DeepDive } from "@/components/DeepDive";
+import { ResearchChat } from "@/components/ResearchChat";
 import { ToneSelector } from "@/components/ToneSelector";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { AuthGuard } from "@/components/AuthGuard";
@@ -558,6 +559,30 @@ export default function Dashboard() {
                     onNavigateToDeepDive={() => setActiveTab("deepdive")}
                     onOutputChange={setCurrentStudioOutput}
                   />
+
+                  {/* ── Ask Your Sources ─────────────────────────────── */}
+                  {sources.length > 0 && (
+                    <div className="rounded-3xl border border-white/8 bg-white/[0.02] overflow-hidden">
+                      <div className="flex items-center gap-3 px-5 py-4 border-b border-white/8 bg-white/[0.02]">
+                        <div className="p-2 rounded-xl bg-violet-500/10 border border-violet-500/15">
+                          <svg className="w-4 h-4 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">Ask Your Sources</p>
+                          <p className="text-[10px] text-white/40">Chat directly with your uploaded documents and links</p>
+                        </div>
+                      </div>
+                      <div className="p-5">
+                        <ResearchChat
+                          sources={sources}
+                          tone={activeTone}
+                          language={activeLanguage}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {sources.length > 0 && (
                     <div className="flex flex-col items-center gap-3 pt-4 border-t border-white/8">

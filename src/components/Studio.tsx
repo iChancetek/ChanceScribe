@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import {
   Headphones, CreditCard, HelpCircle, GitBranch, FileText,
-  Layout, Table2, BarChart3, Video, Loader2, Send,
-  Download, RefreshCw, ChevronRight, Sparkles, Play, Pause, X, Square
+  Layout, Table2, BarChart3, Video, Loader2,
+  Download, RefreshCw, ChevronRight, ChevronLeft, Sparkles, X, Square
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Source } from "./SourceUploader";
@@ -32,6 +32,89 @@ const MODES = [
 interface Flashcard { question: string; answer: string; }
 interface QuizQuestion { question: string; options: string[]; correct: string; }
 interface MindMapNode { label: string; children: MindMapNode[]; }
+interface Slide { number: number; title: string; bullets: string[]; speakerNote: string; }
+
+// ─── Slide Deck Parser ──────────────────────────────────────────────────────
+function parseSlideDeck(raw: string): Slide[] {
+  const sections = raw.split(/^---$/m).map(s => s.trim()).filter(Boolean);
+  return sections.map((section, idx) => {
+    const titleMatch = section.match(/##\s*Slide\s*\d*:?\s*(.+)/i);
+    const title = titleMatch ? titleMatch[1].trim() : `Slide ${idx + 1}`;
+    const speakerMatch = section.match(/\*\*Speaker\s*Note[s]?:\*\*[\s]*(.+)/i);
+    const speakerNote = speakerMatch ? speakerMatch[1].trim() : "";
+    const bulletMatches = [...section.matchAll(/^[-*]\s+(.+)/gm)];
+    const bullets = bulletMatches
+      .map(m => m[1].trim())
+      .filter(b => !b.toLowerCase().startsWith("speaker"));
+    return { number: idx + 1, title, bullets, speakerNote };
+  }).filter(s => s.title || s.bullets.length > 0);
+}
+
+// ─── Slide Card ─────────────────────────────────────────────────────────────
+function SlideCard({ slide, total, onPrev, onNext }: {
+  slide: Slide; total: number;
+  onPrev: () => void; onNext: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Slide card */}
+      <div className="relative rounded-2xl bg-gradient-to-br from-violet-500/10 to-violet-600/5 border border-violet-500/20 p-8 min-h-[280px] flex flex-col">
+        {/* Slide number badge */}
+        <span className="absolute top-4 right-4 text-[10px] font-black uppercase tracking-widest text-violet-400/50 bg-violet-500/10 px-2.5 py-1 rounded-full border border-violet-500/15">
+          {slide.number} / {total}
+        </span>
+        {/* Title */}
+        <h3 className="text-xl font-black text-white leading-tight mb-5 pr-16">{slide.title}</h3>
+        {/* Bullet points */}
+        {slide.bullets.length > 0 && (
+          <ul className="flex-1 space-y-2.5">
+            {slide.bullets.map((b, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400/70 shrink-0 mt-2" />
+                <span className="text-sm text-white/80 leading-relaxed">{b}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      {/* Speaker Note */}
+      {slide.speakerNote && (
+        <div className="flex items-start gap-3 px-4 py-3 bg-white/[0.03] border border-white/8 rounded-xl">
+          <span className="text-[10px] font-black uppercase tracking-widest text-white/25 mt-0.5 shrink-0">Note</span>
+          <p className="text-xs text-white/50 leading-relaxed italic">{slide.speakerNote}</p>
+        </div>
+      )}
+      {/* Navigation */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onPrev}
+          disabled={slide.number === 1}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white/50 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+          Previous
+        </button>
+        {/* Dot indicators */}
+        <div className="flex items-center gap-1.5">
+          {Array.from({ length: total }).map((_, i) => (
+            <span key={i} className={cn(
+              "w-1.5 h-1.5 rounded-full transition-all",
+              i + 1 === slide.number ? "bg-violet-400 scale-125" : "bg-white/15"
+            )} />
+          ))}
+        </div>
+        <button
+          onClick={onNext}
+          disabled={slide.number === total}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white/50 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+        >
+          Next
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function MindMapViz({ node, depth = 0 }: { node: MindMapNode; depth?: number }) {
   const colors = ["text-teal-300", "text-blue-300", "text-violet-300", "text-pink-300"];
@@ -55,6 +138,7 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
   const [quizSelected, setQuizSelected] = useState<Record<number, string>>({});
   const [quizRevealed, setQuizRevealed] = useState(false);
   const [flippedCard, setFlippedCard] = useState<number | null>(null);
+  const [slideIndex, setSlideIndex] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -95,6 +179,7 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
     setStreamText("");
     setJsonData(null);
     setError("");
+    setSlideIndex(0);
 
     const streamingModes = ["report", "slides"];
 
@@ -287,8 +372,38 @@ export function Studio({ sources, tone, language, onNavigateToDeepDive, onOutput
             </div>
           )}
 
-          {/* Streaming text output (report, slides) */}
-          {!isGenerating && streamText && (
+          {/* Slide Deck — parsed visual cards */}
+          {!isGenerating && activeMode === "slides" && streamText && (() => {
+            const slides = parseSlideDeck(streamText);
+            if (slides.length === 0) {
+              return <p className="text-sm text-white/50 text-center py-8">Could not parse slides. Try regenerating.</p>;
+            }
+            const slide = slides[slideIndex] ?? slides[0];
+            return (
+              <div className="space-y-2">
+                {/* Slide count header */}
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs text-white/40 font-semibold">{slides.length} slides generated</p>
+                  <button
+                    onClick={() => downloadText(streamText, "workspaceiq-slides.md")}
+                    className="flex items-center gap-1.5 text-[10px] text-white/30 hover:text-white/60 transition-colors"
+                  >
+                    <Download className="w-3 h-3" />
+                    Download all slides
+                  </button>
+                </div>
+                <SlideCard
+                  slide={slide}
+                  total={slides.length}
+                  onPrev={() => setSlideIndex(i => Math.max(0, i - 1))}
+                  onNext={() => setSlideIndex(i => Math.min(slides.length - 1, i + 1))}
+                />
+              </div>
+            );
+          })()}
+
+          {/* Streaming text output (report only) */}
+          {!isGenerating && activeMode === "report" && streamText && (
             <div className="prose prose-invert prose-sm max-w-none text-white/80 whitespace-pre-wrap leading-relaxed text-sm">
               {streamText}
             </div>
