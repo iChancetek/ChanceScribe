@@ -1,20 +1,20 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Mic, BookOpen, Headphones, Globe, Shield, Sparkles, Zap, FileText, Video, Music, Brain, MessageCircle, Volume2, Layout, CreditCard, HelpCircle, GitBranch, BarChart3, Table2, Save, Download, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Mic, BookOpen, Headphones, Globe, Shield, Sparkles, Zap, FileText, Video, Music, Brain, MessageCircle, Volume2, Layout, CreditCard, HelpCircle, GitBranch, BarChart3, Table2, Save, Download, RotateCcw, Trash2, Languages, RefreshCw } from "lucide-react";
 import { IChancellor } from "@/components/IChancellor";
 import { BrandIdentifier } from "@/components/BrandIdentifier";
 
 const heroFeatures = [
   { icon: Mic, label: "Flow Dictation", color: "text-blue-400", bg: "from-blue-500/20 to-blue-600/5" },
+  { icon: Globe, label: "Live Translate", color: "text-blue-500", bg: "from-blue-500/20 to-blue-600/5" },
   { icon: BookOpen, label: "Research Mode", color: "text-violet-400", bg: "from-violet-500/20 to-violet-600/5" },
-  { icon: Layout, label: "Studio Module", color: "text-blue-400", bg: "from-blue-500/15 to-blue-600/5" },
   { icon: Headphones, label: "Deep Dive Audio", color: "text-emerald-400", bg: "from-emerald-500/15 to-emerald-600/5" },
 ];
 
 const flowFeatures = [
   { icon: Mic, title: "Real-Time Dictation", desc: "Speak naturally and GPT-5.4 instantly transforms your speech into polished, structured text — removing filler words, false starts, and hesitations." },
   { icon: Zap, title: "Tone Engine", desc: "Switch between Professional, Casual, Legal, and Academic tones with one click. Your words, your style — perfectly calibrated." },
-  { icon: Globe, title: "Multi-Language Output", desc: "Dictate in one language, get output in another. Supports English, Spanish, French, and Chinese — with more on the way." },
-  { icon: Volume2, title: "6 AI Voices + MP3 Export", desc: "Listen to your polished text read aloud by Nova, Alloy, Echo, Fable, Onyx, or Shimmer. Download as MP3 for sharing anywhere." },
+  { icon: Globe, title: "Multi-Language Output", desc: "Dictate in one language, get output in another. Supports English, Spanish, French, and 12+ other global languages." },
+  { icon: Volume2, title: "Natural Voice Playback", desc: "Listen to your polished journals and memos read aloud by 'Nova' — a calm, ultra-natural AI voice that sounds human, not robotic." },
   { icon: FileText, title: "Type or Paste", desc: "No microphone? No problem. Type directly or paste any raw text into the writing pad — Flow's AI polishes it instantly." },
 ];
 
@@ -54,6 +54,15 @@ const deepDiveFeatures = [
   { icon: Headphones, title: "One-Click AI Podcast", desc: "Upload your sources, click Generate, and get a natural conversation between two AI hosts about your content." },
   { icon: Volume2, title: "Dual-Voice Narration", desc: "Nova and Echo take turns discussing your research — making complex content feel like a real podcast." },
   { icon: Music, title: "Download as MP3", desc: "Every Deep Dive is fully downloadable. Listen while commuting, working out, or reviewing materials on the go." },
+];
+
+const liveTranslateFeatures = [
+  { icon: Globe, title: "Zero-Latency Translation", desc: "Experience real-time, word-by-word translation and transcription. See words hit the screen the moment they are spoken." },
+  { icon: Zap, title: "3-4 Hour Continuous Loop", desc: "Powered by a high-stability watchdog engine, WorkSpaceIQ can handle massive sessions without manual restarts or data loss." },
+  { icon: Sparkles, title: "AI Session Summary", desc: "Instantly condense hours of translation into a clear 2-4 sentence GPT-5.4 summary for executive review." },
+  { icon: RefreshCw, title: "Professional Polishing", desc: "Apply professional-grade formal enhancement to your live sessions, turning casual conversation into structured records." },
+  { icon: Save, title: "Auto-Save to Library", desc: "Every live session is automatically indexed and saved to your global workspace for easy search and recovery later." },
+  { icon: Languages, title: "Global Language Support", desc: "Full support for English, Spanish, French, Mandarin, German, Italian, Portuguese, Japanese, Korean, Russian, Arabic, and Hindi." },
 ];
 
 const ichancellorFeatures = [
@@ -136,6 +145,7 @@ export default function LearnMorePage() {
         <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
           {[
             { href: "#flow", label: "Flow", color: "border-blue-400/30 text-blue-400" },
+            { href: "#live-translate", label: "Live Translate", color: "border-blue-500/30 text-blue-500" },
             { href: "#research", label: "Research", color: "border-violet-400/30 text-violet-400" },
             { href: "#studio", label: "Studio Module", color: "border-blue-400/30 text-blue-400" },
             { href: "#dashboard", label: "Data Dashboards", color: "border-amber-400/30 text-amber-400" },
@@ -167,6 +177,15 @@ export default function LearnMorePage() {
         subtitle="The world's most frictionless AI writing assistant. Speak naturally, get professional output."
         features={flowFeatures}
         accent="text-blue-400"
+      />
+
+      <FeatureSection
+        id="live-translate"
+        badge="Live Translate"
+        title="Real-Time Global Intelligence."
+        subtitle="Translate and transcribe meeting live for hours at a time with zero-latency streaming."
+        features={liveTranslateFeatures}
+        accent="text-blue-500"
       />
 
       <FeatureSection
