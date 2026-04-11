@@ -492,9 +492,9 @@ export default function Dashboard() {
             </section>
 
           {/* ── RESEARCH TAB (Hidden vs Unmounted to preserve state) ───────── */}
-          <section className={cn("space-y-6", activeTab !== "research" && "hidden")}>
+          <section className={cn("space-y-6 overflow-hidden", activeTab !== "research" && "hidden")}>
             {/* Research header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 text-center md:text-left">
                 <div className="space-y-1">
                   <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground dark:text-white">Research</h2>
                   <p className="text-foreground/60 dark:text-white/70 font-light font-medium">Upload sources and let AI become your research partner.</p>
@@ -502,15 +502,15 @@ export default function Dashboard() {
                 <button
                   onClick={handleExportProject}
                   disabled={sources.length === 0}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-foreground/5 dark:bg-white/5 hover:bg-foreground/10 dark:hover:bg-white/10 border border-foreground/10 dark:border-white/10 text-xs font-bold text-foreground/40 dark:text-white/70 hover:text-foreground dark:hover:text-white transition-all disabled:opacity-30 self-start md:self-auto shadow-sm dark:shadow-none"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-foreground/5 dark:bg-white/5 hover:bg-foreground/10 dark:hover:bg-white/10 border border-foreground/10 dark:border-white/10 text-xs font-bold text-foreground/40 dark:text-white/70 hover:text-foreground dark:hover:text-white transition-all disabled:opacity-30 self-center md:self-auto shadow-sm dark:shadow-none"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Export
                 </button>
               </div>
 
-              {/* Two-column layout: sidebar + main */}
-              <div className="flex gap-5 items-start">
+              {/* Two-column layout: sidebar + main (stacked on mobile) */}
+              <div className="flex flex-col lg:flex-row gap-5 items-stretch lg:items-start w-full max-w-full">
 
                 {/* Project Sidebar */}
                 {user && (
@@ -528,8 +528,8 @@ export default function Dashboard() {
                 <div className="flex-1 min-w-0 space-y-6">
 
                   {/* Active project status bar — interactive rename + delete */}
-                  <div className="flex items-center gap-3 px-4 py-3 bg-white/[0.03] border border-white/8 rounded-2xl">
-                    <WorkspaceIcon workspaceId={activeProject?.id ?? ""} className="w-4 h-4 text-violet-400 shrink-0" />
+                  <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-3 px-4 py-3 bg-white/[0.03] border border-white/8 rounded-2xl text-center sm:text-left w-full">
+                    <WorkspaceIcon workspaceId={activeProject?.id ?? ""} className="w-5 h-5 sm:w-4 sm:h-4 text-violet-400 shrink-0" />
 
                     {/* Name */}
                     <div className="flex-1 min-w-0">

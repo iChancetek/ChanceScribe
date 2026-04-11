@@ -145,7 +145,7 @@ function ItemCard({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <div className="flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0">
           {item.type === "research" && !isTrash && onRestore && (
             <button
               onClick={() => onRestore(item)}
@@ -289,7 +289,7 @@ function ProjectCard({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <div className="flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0">
           {!isTrash && onOpen && (
             <button
               onClick={() => onOpen(project)}

@@ -120,10 +120,10 @@ export function DataDashboard({ sources, tone }: DataDashboardProps) {
     <Minus className="w-3.5 h-3.5 text-foreground/30 dark:text-white/40" />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full items-stretch flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row items-center gap-2.5">
           <div className="p-2 rounded-xl bg-amber-500/10">
             <BarChart3 className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           </div>
@@ -135,7 +135,7 @@ export function DataDashboard({ sources, tone }: DataDashboardProps) {
         <button
           onClick={generateDashboard}
           disabled={isLoading}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-foreground/5 dark:bg-white/5 hover:bg-foreground/10 dark:hover:bg-white/10 border border-foreground/10 dark:border-white/10 text-xs font-semibold text-foreground/40 dark:text-white/50 hover:text-foreground dark:hover:text-white transition-all shadow-sm dark:shadow-none"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-foreground/5 dark:bg-white/5 hover:bg-foreground/10 dark:hover:bg-white/10 border border-foreground/10 dark:border-white/10 text-xs font-semibold text-foreground/40 dark:text-white/50 hover:text-foreground dark:hover:text-white transition-all shadow-sm dark:shadow-none self-center sm:self-auto"
         >
           <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
           Refresh
@@ -143,7 +143,7 @@ export function DataDashboard({ sources, tone }: DataDashboardProps) {
       </div>
 
       {/* Persona selector */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2 w-full">
         {(["ceo", "manager", "analyst"] as Persona[]).map(p => (
           <button
             key={p}

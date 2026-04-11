@@ -115,7 +115,7 @@ export function ProjectSidebar({
 
   // ── Expanded mode ────────────────────────────────────────────────────────
   return (
-    <div className="w-52 shrink-0 flex flex-col gap-2">
+    <div className="w-full lg:w-52 shrink-0 flex flex-col gap-3 items-stretch">
 
       {/* Header row */}
       <div className="flex items-center justify-between">
@@ -144,7 +144,7 @@ export function ProjectSidebar({
       <button
         onClick={handleCreate}
         disabled={isCreating}
-        className="group flex items-center gap-2 px-3 py-2.5 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 hover:border-violet-500/40 text-violet-700 dark:text-violet-300 hover:text-violet-900 dark:hover:text-violet-200 transition-all text-xs font-bold"
+        className="group flex items-center justify-center lg:justify-start gap-2 px-3 py-2.5 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 hover:border-violet-500/40 text-violet-700 dark:text-violet-300 hover:text-violet-900 dark:hover:text-violet-200 transition-all text-xs font-bold"
       >
         {isCreating
           ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -203,7 +203,7 @@ export function ProjectSidebar({
               // Normal project row
               <button
                 onClick={() => onSelectProject(project)}
-                className="w-full text-left px-3 py-2.5"
+                className="w-full text-left px-3 py-2.5 flex flex-col items-stretch"
               >
                 <div className="flex items-start gap-2">
                   <WorkspaceIcon workspaceId={project.id} className={cn(

@@ -313,19 +313,15 @@ export function Studio({ sources, tone, language, studioOutputs, onNavigateToDee
     : [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full items-stretch flex flex-col">
       {/* Mode Selector */}
-      <div className="relative">
+      <div className="relative w-full overflow-hidden">
         <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x"
+          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x w-full justify-start items-center px-2"
         >
           {MODES.map(mode => (
             <motion.button
               key={mode.id}
-              variants={itemVariants}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setActiveMode(mode.id)}
@@ -338,7 +334,7 @@ export function Studio({ sources, tone, language, studioOutputs, onNavigateToDee
                 mode.comingSoon && "opacity-40 cursor-not-allowed"
               )}
             >
-              <mode.icon className={cn("w-5 h-5", activeMode === mode.id ? (activeMode === mode.id ? "text-white" : mode.color) : "text-foreground/40 dark:text-white/60 group-hover:text-foreground/70 dark:group-hover:text-white/80")} />
+              <mode.icon className={cn("w-5 h-5", activeMode === mode.id ? "text-white" : "text-foreground/40 dark:text-white/60 group-hover:text-foreground/70 dark:group-hover:text-white/80")} />
               <span className={cn("text-[10px] font-bold uppercase tracking-wide", activeMode === mode.id ? "text-white" : "text-foreground/60 dark:text-white/60")}>{mode.label}</span>
               {mode.comingSoon && <span className="text-[8px] text-amber-500 font-bold uppercase tracking-wide">Soon</span>}
             </motion.button>
@@ -350,13 +346,13 @@ export function Studio({ sources, tone, language, studioOutputs, onNavigateToDee
       <motion.div 
         layout
         className={cn(
-          "min-h-[320px] rounded-3xl border bg-gradient-to-br p-6 flex flex-col",
+          "min-h-[320px] rounded-[2rem] md:rounded-3xl border bg-gradient-to-br p-4 md:p-6 flex flex-col w-full max-w-full",
           currentMode.bg, currentMode.border
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-5 text-center sm:text-left">
+          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col sm:flex-row items-center gap-2.5">
             <div className={cn("p-2 rounded-xl bg-foreground/5 dark:bg-white/5")}>
               <currentMode.icon className={cn("w-5 h-5", currentMode.color)} />
             </div>
@@ -631,18 +627,18 @@ export function Studio({ sources, tone, language, studioOutputs, onNavigateToDee
                   <p className="text-xs text-foreground/40 dark:text-white/50">{jsonData.subtitle}</p>
                 </div>
                 {jsonData.keyStats?.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
                     {jsonData.keyStats.map((stat: any, i: number) => (
                       <motion.div 
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.1 }}
                         key={i} 
-                        className="text-center p-4 bg-foreground/5 dark:bg-white/5 rounded-2xl border border-foreground/10 dark:border-white/8 shadow-sm dark:shadow-none"
+                        className="text-center p-3 md:p-4 bg-foreground/5 dark:bg-white/5 rounded-2xl border border-foreground/10 dark:border-white/8 shadow-sm dark:shadow-none"
                       >
-                        <p className="text-2xl font-black text-orange-600 dark:text-orange-400">{stat.value}</p>
-                        <p className="text-[10px] font-bold text-foreground/70 dark:text-white/70 mt-1">{stat.label}</p>
-                        {stat.context && <p className="text-[9px] text-foreground/30 dark:text-white/35 mt-1">{stat.context}</p>}
+                        <p className="text-xl md:text-2xl font-black text-orange-600 dark:text-orange-400">{stat.value}</p>
+                        <p className="text-[9px] md:text-[10px] font-bold text-foreground/70 dark:text-white/70 mt-1">{stat.label}</p>
+                        {stat.context && <p className="text-[8px] md:text-[9px] text-foreground/30 dark:text-white/35 mt-1">{stat.context}</p>}
                       </motion.div>
                     ))}
                   </div>

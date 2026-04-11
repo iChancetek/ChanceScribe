@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, Link, Loader2, FileText, Globe, Video, Music, X, AlertCircle, Table2 } from "lucide-react";
+import { Upload, Link2, Loader2, FileText, Globe, Video, Music, X, AlertCircle, Table2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { extractDocumentText } from "@/actions/document";
 
@@ -128,7 +128,7 @@ export function SourceUploader({ sources, onSourcesChange, maxSources = 10 }: So
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full items-stretch">
       {/* Drop zone */}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
@@ -136,10 +136,11 @@ export function SourceUploader({ sources, onSourcesChange, maxSources = 10 }: So
         onDrop={(e) => { e.preventDefault(); setDragActive(false); handleFiles(e.dataTransfer.files); }}
         onClick={() => fileInputRef.current?.click()}
         className={cn(
-          "border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all",
+          "border-2 border-dashed rounded-2xl p-6 sm:p-8 text-center cursor-pointer transition-all w-full max-w-full",
           dragActive
-            ? "border-blue-500 bg-blue-500/5 scale-[1.01]"
-            : "border-foreground/10 dark:border-white/10 hover:border-foreground/20 dark:hover:border-white/20 hover:bg-foreground/5 dark:hover:bg-white/5"
+            ? "border-violet-500 bg-violet-500/5 ring-4 ring-violet-500/10"
+            : "border-foreground/10 dark:border-white/10 hover:border-violet-500/50 hover:bg-foreground/5 dark:hover:bg-white/[0.04]",
+          sources.length >= maxSources && "opacity-50 cursor-not-allowed pointer-events-none"
         )}
       >
         <input
@@ -150,7 +151,7 @@ export function SourceUploader({ sources, onSourcesChange, maxSources = 10 }: So
           className="hidden"
           onChange={(e) => e.target.files && handleFiles(e.target.files)}
         />
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center justify-center gap-3 text-center">
           {isUploading ? (
             <Loader2 className="w-8 h-8 text-foreground/40 dark:text-white/50 animate-spin" />
           ) : (
@@ -176,22 +177,22 @@ export function SourceUploader({ sources, onSourcesChange, maxSources = 10 }: So
       )}
 
       {/* URL input */}
-      <div className="flex gap-2">
-        <div className="flex-1 flex items-center gap-2 px-4 py-3 bg-foreground/5 dark:bg-white/[0.04] border border-foreground/10 dark:border-white/8 rounded-xl backdrop-blur-sm">
-          <Link className="w-4 h-4 text-foreground/40 dark:text-white/40 shrink-0" />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full max-w-2xl mx-auto">
+        <div className="relative flex-1 group">
+          <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/30 dark:text-white/30 group-focus-within:text-violet-400 transition-colors" />
           <input
             type="url"
+            placeholder="Paste a website or YouTube URL..."
+            className="w-full bg-foreground/5 dark:bg-white/[0.03] border border-foreground/10 dark:border-white/8 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-violet-500/50 focus:ring-4 focus:ring-violet-500/5 transition-all"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleUrlSubmit()}
-            placeholder="Paste a website or YouTube URL..."
-            className="flex-1 bg-transparent text-sm font-medium text-foreground dark:text-white placeholder:text-foreground/30 dark:placeholder:text-white/30 focus:outline-none"
           />
         </div>
         <button
           onClick={handleUrlSubmit}
           disabled={isExtractingUrl || !urlInput.trim()}
-          className="px-5 py-3 bg-[#1a73e8] text-white rounded-xl text-sm font-semibold hover:bg-[#1a73e8]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-blue-500/25"
+          className="px-6 py-2.5 bg-foreground dark:bg-white text-background dark:text-black rounded-xl text-sm font-bold hover:opacity-90 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-black/10 dark:shadow-none"
         >
           {isExtractingUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
         </button>
@@ -200,7 +201,7 @@ export function SourceUploader({ sources, onSourcesChange, maxSources = 10 }: So
       {/* Source cards */}
       {sources.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-foreground/30 dark:text-white/40">
+          <p className="text-[10px] uppercase tracking-widest font-bold text-foreground/30 dark:text-white/40 text-center sm:text-left">
             {sources.length} / {maxSources} Sources
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -55,7 +55,7 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    @apply antialiased min-h-screen font-sans;
+    @apply antialiased min-h-screen font-sans overflow-x-hidden;
   }
 
   h1, h2, h3, .serif {
@@ -70,7 +70,7 @@
   }
   
   .writing-pad {
-    @apply max-w-4xl mx-auto w-full bg-card shadow-none rounded-2xl border border-border p-10 backdrop-blur-sm;
+    @apply max-w-4xl mx-auto w-full bg-card shadow-none rounded-2xl border border-border p-4 md:p-10 backdrop-blur-sm;
   }
 
   .dark-card {
