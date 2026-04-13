@@ -458,11 +458,11 @@ export function LiveTranslate() {
                  </div>
              </div>
 
-             <div className="flex items-center gap-2 shrink-0 bg-white/5 px-3 py-1.5 rounded-full border border-white/10" title="Ultra-smart neural transcription. Near-perfect accuracy. COMING SOON for Premium Subscribers.">
+             <div className="flex items-center gap-2 shrink-0 bg-white/5 px-3 py-1.5 rounded-full border border-white/10" title="Ultra-smart neural transcription. Near-perfect accuracy. Exclusively for Premium Plus Subscribers.">
                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-primary dark:text-blue-400">Pro Logic</span>
-                    <span className="text-[8px] font-bold text-foreground/40 dark:text-white/40">COMING SOON</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-primary dark:text-blue-400">Premium Plus</span>
                  </div>
+ 
                  {/* Premium Toggle */}
                  <div className="w-9 h-5 rounded-full bg-secondary dark:bg-white/10 relative flex items-center transition-all cursor-help border border-border dark:border-white/20 shadow-inner">
                      <div className="w-3.5 h-3.5 rounded-full bg-foreground/10 dark:bg-white/10 absolute left-0.5" />
