@@ -458,7 +458,7 @@ export function LiveTranslate() {
                  </div>
              </div>
 
-             <div className="flex items-center gap-2 shrink-0 bg-white/5 px-3 py-1.5 rounded-full border border-white/10" title="Ultra-smart neural transcription. Near-perfect accuracy. COMING SOON for Advanced Pro Subscribers.">
+             <div className="flex items-center gap-2 shrink-0 bg-white/5 px-3 py-1.5 rounded-full border border-white/10" title="Ultra-smart neural transcription. Near-perfect accuracy. COMING SOON for Premium Subscribers.">
                  <div className="flex flex-col">
                     <span className="text-[10px] font-black uppercase tracking-widest text-primary dark:text-blue-400">Pro Logic</span>
                     <span className="text-[8px] font-bold text-foreground/40 dark:text-white/40">COMING SOON</span>
