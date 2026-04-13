@@ -636,13 +636,13 @@ export function LiveTranslate() {
                         "w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-xl active:scale-95 group",
                         isRecording 
                           ? "bg-red-500 text-white shadow-red-500/30 hover:bg-red-600" 
-                          : "bg-primary dark:bg-blue-600 text-white shadow-primary/30 hover:bg-primary/90 hover:scale-105"
+                          : "bg-primary text-primary-foreground shadow-primary/30 hover:bg-primary/90 hover:scale-105"
                     )}
                  >
                      {isRecording ? (
                          <Square className="w-5 h-5 fill-current" />
                      ) : (
-                         <Mic className="w-7 h-7 text-white group-hover:scale-110 transition-transform" />
+                         <Mic className="w-7 h-7 text-primary-foreground group-hover:scale-110 transition-transform" />
                      )}
                      
                      {/* Pulse rings */}
