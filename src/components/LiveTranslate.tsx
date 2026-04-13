@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Mic, Square, Loader2, Play, Pause, Download, ChevronDown, ArrowRightLeft, Settings, Info, Save, RefreshCw, Share2, Sparkles, Check, X, Globe } from "lucide-react";
+import { Mic, Square, Loader2, Play, Pause, Download, ChevronDown, ArrowRightLeft, Settings, Info, Save, RefreshCw, Share2, Sparkles, Check, X, Globe, User, Users, Headphones, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { saveItem } from "@/lib/firebase/items";
@@ -23,15 +23,16 @@ const LANGUAGES = [
 
 export function LiveTranslate() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"transcribe" | "translate" | "dubbing">("translate");
+  const [activeTab, setActiveTab] = useState<"transcribe" | "translate" | "dubbing" | "conversation">("translate");
   const [sourceLanguage, setSourceLanguage] = useState("English");
   const [targetLanguage, setTargetLanguage] = useState("Spanish");
+  const [summaryLanguage, setSummaryLanguage] = useState("English");
   const [isRecording, setIsRecording] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   
   // Transcripts
   const [interimText, setInterimText] = useState("");
-  const [transcriptBlocks, setTranscriptBlocks] = useState<{ id: string; original: string; translated: string; isTranslating: boolean }[]>([]);
+  const [transcriptBlocks, setTranscriptBlocks] = useState<{ id: string; original: string; translated: string; isTranslating: boolean; speaker?: "A" | "B"; language?: string }[]>([]);
 
   // AI & Save States
   const [summaryText, setSummaryText] = useState("");
@@ -39,9 +40,14 @@ export function LiveTranslate() {
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPodcastGenerating, setIsPodcastGenerating] = useState<"recap" | "enhanced" | null>(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [showResults, setShowResults] = useState(false);
+
+  // Conversation Mode State
+  const [currentSpeaker, setCurrentSpeaker] = useState<"A" | "B">("A");
+  const isSpeakingRef = useRef(false);
 
   // Refs
   const recognitionRef = useRef<any>(null);
@@ -79,25 +85,32 @@ export function LiveTranslate() {
 
   const handleTranslateText = async (text: string, blockId: string) => {
     try {
+      const isConversation = activeTab === "conversation";
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           text, 
-          sourceLanguage, 
-          targetLanguage,
-          autoDetect: false
+          sourceLanguage: isConversation ? "auto" : sourceLanguage, 
+          targetLanguage: isConversation ? (currentSpeaker === "A" ? targetLanguage : sourceLanguage) : targetLanguage,
+          autoDetect: isConversation || sourceLanguage === "Auto Detect"
         })
       });
       const data = await res.json();
       
       setTranscriptBlocks((prev) => 
-        prev.map(block => block.id === blockId ? { ...block, translated: data.translatedText || text, isTranslating: false } : block)
+        prev.map(block => block.id === blockId ? { ...block, translated: data.translatedText || text, isTranslating: false, language: data.detectedLanguage } : block)
       );
 
-      // If dubbing is active, play TTS
-      if (activeTab === "dubbing") {
-         playTTS(data.translatedText || text);
+      // If dubbing or conversation is active, play TTS
+      if (activeTab === "dubbing" || activeTab === "conversation") {
+         const voice = activeTab === "conversation" ? (currentSpeaker === "A" ? "shimmer" : "onyx") : "nova";
+         await playTTS(data.translatedText || text, voice);
+         
+         if (activeTab === "conversation") {
+           // Swap speaker for next turn
+           setCurrentSpeaker(prev => prev === "A" ? "B" : "A");
+         }
       }
 
     } catch (err) {
@@ -108,23 +121,35 @@ export function LiveTranslate() {
     }
   };
 
-  const playTTS = async (text: string) => {
-    try {
-        const res = await fetch("/api/flow/tts", { 
-          method: "POST", 
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, voice: "nova" }) 
-        });
-        if (res.ok) {
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            const audio = new Audio(url);
-            audioContextRef.current = audio;
-            audio.play();
-        }
-    } catch(err) {
-        console.error("TTS playback error:", err);
-    }
+  const playTTS = async (text: string, voice = "nova") => {
+    return new Promise<void>(async (resolve) => {
+      try {
+          isSpeakingRef.current = true;
+          const res = await fetch("/api/flow/tts", { 
+            method: "POST", 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text, voice }) 
+          });
+          if (res.ok) {
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const audio = new Audio(url);
+              audioContextRef.current = audio;
+              audio.onended = () => {
+                isSpeakingRef.current = false;
+                resolve();
+              };
+              audio.play();
+          } else {
+            isSpeakingRef.current = false;
+            resolve();
+          }
+      } catch(err) {
+          console.error("TTS playback error:", err);
+          isSpeakingRef.current = false;
+          resolve();
+      }
+    });
   };
 
   const startRecording = () => {
@@ -159,14 +184,18 @@ export function LiveTranslate() {
       setInterimText(interim);
       
       if (final.trim()) {
+          // If AI is currently speaking (TTS), ignore the feedback of its own speech
+          if (isSpeakingRef.current) return;
+
           const blockId = Date.now().toString() + Math.random().toString();
-          const needsTranslation = activeTab === "translate" || activeTab === "dubbing";
+          const needsTranslation = activeTab === "translate" || activeTab === "dubbing" || activeTab === "conversation";
           
           setTranscriptBlocks(prev => [...prev, {
               id: blockId,
               original: final.trim(),
               translated: "",
-              isTranslating: needsTranslation
+              isTranslating: needsTranslation,
+              speaker: activeTab === "conversation" ? currentSpeaker : undefined
           }]);
 
           if (needsTranslation) {
@@ -221,7 +250,11 @@ export function LiveTranslate() {
         const res = await fetch("/api/journal/enhance", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: fullTranslatedText, mode: "summarize" }),
+            body: JSON.stringify({ 
+              text: fullTranslatedText, 
+              mode: "summarize",
+              language: summaryLanguage 
+            }),
         });
         if (!res.body) throw new Error("No stream content");
         const reader = res.body.getReader();
@@ -270,6 +303,32 @@ export function LiveTranslate() {
     }
   };
 
+  const handleGeneratePodcast = async (mode: "recap" | "enhanced") => {
+    if (transcriptBlocks.length === 0) return;
+    setIsPodcastGenerating(mode);
+    setShowResults(true);
+    setError("");
+    try {
+      const fullTranscript = transcriptBlocks.map(b => `${b.speaker === "A" ? "SPEAKER A" : "SPEAKER B"} (${b.language || "unknown"}): ${b.original}`).join("\n");
+      const res = await fetch("/api/live/podcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript: fullTranscript, mode, language: summaryLanguage })
+      });
+      if (!res.ok) throw new Error("Podcast generation failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `conversation-${mode}-${Date.now()}.mp3`;
+      a.click();
+    } catch (e) {
+      setError("Failed to generate podcast. Please try again.");
+    } finally {
+      setIsPodcastGenerating(null);
+    }
+  };
+
   const handleSave = async () => {
     if (!user || transcriptBlocks.length === 0) return;
     setIsSaving(true);
@@ -286,6 +345,7 @@ export function LiveTranslate() {
                 summary: summaryText,
                 enhanced: enhancedText,
                 sessionDuration: elapsedTime,
+                transcript: transcriptBlocks
             }
         });
         setSaved(true);
@@ -319,17 +379,18 @@ export function LiveTranslate() {
          
          {/* Tabs */}
          <div className="flex p-3 gap-2 bg-secondary/30 dark:bg-white/[0.02] border-b border-border dark:border-white/5 relative z-10 w-full overflow-x-auto scrollbar-hide py-3 px-4">
-             {["transcribe", "translate", "dubbing"].map(tab => (
+             {["transcribe", "translate", "dubbing", "conversation"].map(tab => (
                  <button
                     key={tab}
                     onClick={() => setActiveTab(tab as any)}
                     className={cn(
-                        "flex-1 min-w-[100px] text-xs font-bold py-2.5 rounded-xl capitalize transition-all",
+                        "flex-1 min-w-[100px] text-xs font-bold py-2.5 rounded-xl capitalize transition-all flex items-center justify-center gap-2",
                         activeTab === tab 
                           ? "bg-primary/10 text-primary dark:bg-blue-500/20 dark:text-blue-400 border border-primary/20 dark:border-blue-500/20 shadow-sm"
                           : "text-foreground/45 dark:text-white/45 hover:bg-secondary dark:hover:bg-white/5 border border-transparent"
                     )}
                  >
+                    {tab === "conversation" && <Users className="w-3.5 h-3.5" />}
                     {tab}
                  </button>
              ))}
@@ -392,18 +453,46 @@ export function LiveTranslate() {
              )}
 
              {transcriptBlocks.map((block) => (
-                <div key={block.id} className="space-y-1 animate-in fade-in slide-in-from-bottom-2">
-                    <p className="text-sm font-semibold text-foreground/80 dark:text-white/80">{block.original}</p>
-                    {(activeTab === "translate" || activeTab === "dubbing") && (
-                        <div className="flex items-center gap-2">
-                            {block.isTranslating && <Loader2 className="w-3 h-3 text-primary animate-spin" />}
-                            <p className="text-lg font-bold text-primary dark:text-blue-400 leading-tight">
-                                {block.translated || "..."}
-                            </p>
-                        </div>
-                    )}
-                </div>
-             ))}
+                 <div key={block.id} className={cn(
+                   "space-y-1 animate-in fade-in slide-in-from-bottom-2 flex flex-col",
+                   block.speaker === "B" ? "items-end" : "items-start"
+                 )}>
+                    <div className={cn(
+                      "flex items-center gap-2 mb-1",
+                      block.speaker === "B" && "flex-row-reverse"
+                    )}>
+                      <div className={cn(
+                        "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold",
+                        block.speaker === "A" ? "bg-blue-500/20 text-blue-400" : block.speaker === "B" ? "bg-purple-500/20 text-purple-400" : "bg-secondary text-foreground/40"
+                      )}>
+                        {block.speaker || <User className="w-3 h-3" />}
+                      </div>
+                      <span className="text-[10px] font-bold text-foreground/30 dark:text-white/20 uppercase tracking-tighter">
+                        {block.language || sourceLanguage}
+                      </span>
+                    </div>
+
+                    <div className={cn(
+                      "p-3 rounded-2xl max-w-[85%]",
+                      block.speaker === "A" ? "bg-secondary/50 dark:bg-white/[0.03] rounded-tl-none" : 
+                      block.speaker === "B" ? "bg-primary/5 dark:bg-blue-500/5 border border-primary/10 dark:border-blue-500/10 rounded-tr-none" :
+                      "bg-secondary/30"
+                    )}>
+                      <p className="text-sm font-semibold text-foreground/80 dark:text-white/80">{block.original}</p>
+                      {(activeTab === "translate" || activeTab === "dubbing" || activeTab === "conversation") && (
+                          <div className="flex items-center gap-2 mt-1">
+                              {block.isTranslating && <Loader2 className="w-3 h-3 text-primary animate-spin" />}
+                              <p className={cn(
+                                "text-lg font-bold leading-tight",
+                                block.speaker === "B" ? "text-purple-400" : "text-primary dark:text-blue-400"
+                              )}>
+                                  {block.translated || "..."}
+                              </p>
+                          </div>
+                      )}
+                    </div>
+                 </div>
+              ))}
 
              {interimText && (
                  <div className="space-y-1 opacity-60 transition-all">
@@ -422,41 +511,74 @@ export function LiveTranslate() {
          </div>
 
          {/* AI Analysis / Summary Output Area */}
-         {showResults && (summaryText || enhancedText || isSummarizing || isEnhancing) && (
+         {showResults && (
             <div className="border-t border-border dark:border-white/5 bg-primary/[0.02] dark:bg-blue-500/[0.02] p-6 space-y-6 animate-in slide-in-from-bottom-4 duration-500">
                 {/* Summary Section */}
-                {(summaryText || isSummarizing) && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-primary dark:text-blue-400" />
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-foreground/60 dark:text-white/60">AI Analysis</h4>
+                        {(isSummarizing || isEnhancing) && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+                    </div>
+                    {/* Summary Lang Selector */}
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-3 h-3 text-foreground/30" />
+                      <select 
+                        value={summaryLanguage}
+                        onChange={(e) => setSummaryLanguage(e.target.value)}
+                        className="bg-transparent border-none text-[10px] font-bold text-foreground/40 dark:text-white/40 focus:outline-none"
+                      >
+                        {LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  {summaryText && (
                     <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-primary dark:text-blue-400" />
-                            <h4 className="text-xs font-bold uppercase tracking-widest text-foreground/60 dark:text-white/60">AI Summary</h4>
-                            {isSummarizing && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
-                        </div>
                         <p className={cn(
                             "text-sm text-foreground/80 dark:text-white/80 leading-relaxed font-medium",
                             isSummarizing && "animate-pulse"
                         )}>
-                            {summaryText || "Generating summary..."}
+                            {summaryText}
                         </p>
                     </div>
-                )}
+                  )}
 
-                {/* Enhanced Section */}
-                {(enhancedText || isEnhancing) && (
+                  {enhancedText && (
                     <div className="space-y-2 pt-4 border-t border-border dark:border-white/5">
                         <div className="flex items-center gap-2">
                             <RefreshCw className="w-4 h-4 text-violet-400" />
-                            <h4 className="text-xs font-bold uppercase tracking-widest text-foreground/60 dark:text-white/60">Professional Enhancement</h4>
-                            {isEnhancing && <Loader2 className="w-3 h-3 animate-spin text-violet-400" />}
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-foreground/60 dark:text-white/60">Professional Update</h4>
                         </div>
                         <p className={cn(
                             "text-sm text-foreground/80 dark:text-white/80 leading-relaxed italic",
                             isEnhancing && "animate-pulse"
                         )}>
-                            {enhancedText || "Polishing translation..."}
+                            {enhancedText}
                         </p>
                     </div>
-                )}
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-border dark:border-white/5">
+                    <button 
+                      onClick={() => handleGeneratePodcast("recap")}
+                      disabled={isPodcastGenerating !== null}
+                      className="flex-1 flex items-center justify-center gap-2 p-3 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-xl transition-all disabled:opacity-50"
+                    >
+                      {isPodcastGenerating === "recap" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Headphones className="w-4 h-4" />}
+                      <span className="text-xs font-bold">Recap Podcast</span>
+                    </button>
+                    <button 
+                      onClick={() => handleGeneratePodcast("enhanced")}
+                      disabled={isPodcastGenerating !== null}
+                      className="flex-1 flex items-center justify-center gap-2 p-3 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl transition-all disabled:opacity-50"
+                    >
+                      {isPodcastGenerating === "enhanced" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Volume2 className="w-4 h-4" />}
+                      <span className="text-xs font-bold">Enhanced Replay</span>
+                    </button>
+                </div>
 
                 <button 
                   onClick={() => setShowResults(false)}
@@ -469,9 +591,14 @@ export function LiveTranslate() {
 
          {/* Footer Control Room */}
          <div className="p-6 border-t border-border dark:border-white/10 bg-secondary/20 dark:bg-white/[0.01] flex flex-col items-center justify-center gap-4 relative shadow-[inset_0_10px_20px_-10px_rgba(0,0,0,0.02)]">
-             <div className="absolute top-[-14px] bg-primary/10 text-primary dark:bg-blue-500/20 dark:text-blue-400 text-[10px] font-bold px-3 py-1 rounded-full border border-primary/20">
-                 {isRecording ? "Live" : "Press and start talking"}
-             </div>
+              <div className="absolute top-[-14px] bg-primary/10 text-primary dark:bg-blue-500/20 dark:text-blue-400 text-[10px] font-bold px-3 py-1 rounded-full border border-primary/20 flex items-center gap-2">
+                 {isRecording ? (
+                   <>
+                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                     {activeTab === "conversation" ? `Person ${currentSpeaker} is speaking...` : "Live"}
+                   </>
+                 ) : "Press and start talking"}
+              </div>
 
              <div className="flex items-center justify-center gap-6 mt-4">
                  <div className="text-xs font-medium text-foreground/40 dark:text-white/40 w-16 text-right tabular-nums">

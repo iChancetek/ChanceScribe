@@ -20,7 +20,8 @@ RULES:
 1. Output ONLY the translated text. No conversational filler, no introductions.
 2. If the text appears to be a fragment or incomplete sentence, translate it as best as possible without attempting to "finish" the thought.
 3. Maintain the exact tone, intent, and meaning of the original speaker.
-4. If the source text is ALREADY in ${targetLanguage}, just improve its grammar slightly and output it.`;
+4. If the source text is ALREADY in ${targetLanguage}, just improve its grammar slightly and output it.
+5. If auto-detecting, identify the source language and include it in the format: [DETECTED: LanguageName] followed by the translation on a new line.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-5.4",
@@ -29,12 +30,23 @@ RULES:
         { role: "system", content: systemPrompt },
         { role: "user", content: text }
       ],
-      temperature: 0.2, // Low temperature for factual, rigid translation
+      temperature: 0.1, // Even lower for more consistency
     });
 
-    const translatedText = completion.choices[0]?.message?.content?.trim() || "";
+    let content = completion.choices[0]?.message?.content?.trim() || "";
+    let detectedLanguage = sourceLanguage;
 
-    return new Response(JSON.stringify({ translatedText }), { 
+    if (autoDetect && content.includes("[DETECTED:")) {
+      const match = content.match(/\[DETECTED:\s*([^\]]+)\]/);
+      if (match) {
+        detectedLanguage = match[1].trim();
+        content = content.replace(/\[DETECTED:\s*[^\]]+\]\n?/, "").trim();
+      }
+    }
+
+    const translatedText = content;
+
+    return new Response(JSON.stringify({ translatedText, detectedLanguage }), { 
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
