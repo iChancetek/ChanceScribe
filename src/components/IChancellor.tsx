@@ -304,7 +304,7 @@ export function IChancellor() {
             />
             <button
               onClick={toggleVoiceInput}
-              className={cn("p-1.5 rounded-lg transition-colors", isListening ? "text-red-400 bg-red-400/10 animate-pulse" : "text-white/30 hover:text-white/70")}
+              className={cn("p-1.5 rounded-lg transition-colors", isListening ? "text-red-400 bg-red-400/10 animate-pulse" : "text-white/80 hover:text-white")}
             >
               {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>

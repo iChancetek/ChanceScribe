@@ -642,7 +642,7 @@ export function LiveTranslate() {
                      {isRecording ? (
                          <Square className="w-5 h-5 fill-current" />
                      ) : (
-                         <Mic className="w-7 h-7 group-hover:scale-110 transition-transform" />
+                         <Mic className="w-7 h-7 text-white group-hover:scale-110 transition-transform" />
                      )}
                      
                      {/* Pulse rings */}
