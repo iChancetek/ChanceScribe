@@ -961,7 +961,7 @@ export function LiveTranslate({ globalLanguage }: LiveTranslateProps) {
 
                  <div className="flex flex-col items-center gap-1">
                     <button
-                        onClick={isRecording ? stopRecording : startRecording}
+                        onClick={isRecording ? stopRecording : () => startRecording()}
                         className={cn(
                             "w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-xl active:scale-95 group relative mb-1",
                             isRecording 
